@@ -34,9 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INICIALIZACIÓN ---
 
-    /**
-     * Función principal que se ejecuta al cargar la página.
-     */
     const init = () => {
         createStars(100);
         populateTimeSelectors();
@@ -47,10 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LÓGICA DE LA UI ---
 
-    /**
-     * Crea estrellas animadas en el fondo.
-     * @param {number} count - Número de estrellas a crear.
-     */
     const createStars = (count) => {
         const container = document.getElementById('stars-container');
         if (!container) return;
@@ -68,22 +61,19 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /**
-     * Rellena los selectores de hora, minuto y AM/PM en el modal.
+     * Rellena los selectores de hora y minuto.
+     * El selector de minutos ahora va en incrementos de 5.
      */
     const populateTimeSelectors = () => {
         for (let i = 1; i <= 12; i++) {
             hourSelect.innerHTML += `<option value="${i}">${String(i).padStart(2, '0')}</option>`;
         }
-        for (let i = 0; i < 60; i++) {
+        // MEJORA: Llenar los minutos en incrementos de 5 para una mejor UX.
+        for (let i = 0; i < 60; i += 5) {
             minuteSelect.innerHTML += `<option value="${i}">${String(i).padStart(2, '0')}</option>`;
         }
     };
 
-    /**
-     * Renderiza las tarjetas de resultados.
-     * @param {HTMLElement} container - El contenedor para las tarjetas.
-     * @param {Array<Object>} results - Los datos de los resultados.
-     */
     const renderResults = (container, results) => {
         container.innerHTML = '';
         results.forEach((result) => {
@@ -104,31 +94,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LÓGICA DE TIEMPO Y CÁLCULOS ---
 
-    /**
-     * Formatea un objeto Date a HH:MM AM/PM.
-     * @param {Date} date - La fecha a formatear.
-     * @returns {string}
-     */
     const formatTime = (date) => date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    /**
-     * Calcula los ciclos de sueño usando los nuevos títulos descriptivos.
-     * @param {Date} startTime - La hora de inicio.
-     * @returns {Array<Object>}
-     */
     const calculateWakeUpTimes = (startTime) => {
         return Array.from({ length: 9 }, (_, i) => {
             const cycleNum = i + 1;
             const wakeUpTime = new Date(startTime.getTime() + cycleNum * 90 * 60 * 1000);
-            // Asigna la clasificación directamente desde el array CYCLE_DETAILS
             const classification = CYCLE_DETAILS[i];
             return { cycle: cycleNum, time: formatTime(wakeUpTime), classification };
         });
     };
 
-    /**
-     * Función principal que actualiza toda la aplicación.
-     */
     const updateApp = () => {
         const resultsNow = calculateWakeUpTimes(baseTime);
         renderResults(resultsNowContainer, resultsNow);
@@ -162,10 +138,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const openModal = () => {
         const now = new Date();
         let hours = now.getHours();
-        const minutes = now.getMinutes();
+        // MEJORA: Redondear los minutos al intervalo de 5 más cercano para el valor por defecto.
+        let minutes = Math.round(now.getMinutes() / 5) * 5;
+        if (minutes === 60) {
+            minutes = 0;
+            hours = (hours + 1) % 24;
+        }
+
         const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12;
-        hours = hours ? hours : 12; // el 0 se convierte en 12
+        hours = hours ? hours : 12;
 
         hourSelect.value = hours;
         minuteSelect.value = minutes;
