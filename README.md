@@ -11,7 +11,7 @@ La aplicación calcula las horas óptimas para programar tu alarma basándose en
 - **Planificación a Futuro:** ¿No te vas a dormir ahora? Usa el selector de hora para calcular los ciclos desde cualquier momento que elijas.
 - **Tiempo para Dormir Ajustable:** Puedes configurar el tiempo que estimas que tardarás en conciliar el sueño para obtener cálculos aún más precisos.
 - **Clasificación Visual Clara:** La aplicación organiza los resultados en tres niveles para que puedas tomar una decisión informada sobre tu descanso:
-  - **Sueño Ligero (Ciclos 1-3):** Recomendado solo para siestas cortas. Despertar aquí podría interrumpir fases importantes del descanso.
+  - **Sueño Ligero (Ciclos 1-3):** Recomendado solo para siestas cortas o emergencias.
   - **Descanso Aceptable (Ciclos 4-5):** Una cantidad de sueño adecuada para funcionar bien al día siguiente.
   - **Descanso Óptimo (Ciclos 6+):** El ideal para despertar sintiéndote completamente renovado, con la máxima energía y claridad mental.
 - **Diseño Enfocado:** Una interfaz oscura y minimalista, diseñada para ser usada de noche sin causar fatiga visual.
@@ -32,10 +32,10 @@ El proyecto está organizado de manera limpia y sencilla para facilitar su mante
 SleepTimer/  
 │  
 ├── extras/  
-│ ├── style.css # Estilos personalizados y animaciones  
-│ └── script.js # Lógica de la aplicación  
+│ ├── style.css 
+│ └── script.js
 │  
-└── index.html # Archivo principal de la aplicación  
+└── index.html 
 ```
 
 ## **Autor**
