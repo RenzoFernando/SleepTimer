@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SleepTimer - Calcula tus Ciclos de Sueño</title>
+
+    <meta name="description" content="Calcula las horas óptimas para despertar basándote en ciclos de sueño. Una herramienta de descanso diseñada por Renzo.">
+    <meta name="author" content="Renzo">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="extras/style.css">
+    <script src="extras/script.js" defer></script>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+<!-- Fondo animado de estrellas -->
+<div id="stars-container"></div>
+
+<main class="w-full max-w-4xl mx-auto z-10">
+    <header class="text-center mb-8">
+        <div class="flex justify-center items-center gap-3 mb-2">
+            <!-- Icono de Luna Mejorado -->
+            <svg class="w-10 h-10 text-cyan-300" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15.1851 3.25C11.8384 3.25 9.03515 5.43839 8.21939 8.51042C5.35818 9.07008 3.25 11.5335 3.25 14.625C3.25 18.1023 6.14772 21 9.625 21H18.375C20.9372 21 23 18.9372 23 16.375C23 14.1161 21.3111 12.2183 19.1848 11.8542C19.6014 10.3703 19.5222 8.78173 18.9686 7.33336C18.415 5.88499 17.4164 4.65631 16.1249 3.82981C15.8251 3.63405 15.5086 3.48483 15.1851 3.38831" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h1 class="app-title">SleepTimer</h1>
+        </div>
+        <p id="subtitle" class="subtitle-text">Calculando desde la hora actual: <span id="current-time" class="font-bold text-white"></span></p>
+    </header>
+
+    <div class="controls-container">
+        <button id="open-time-modal-btn" class="control-button">Elegir otra hora</button>
+    </div>
+
+    <div class="results-grid">
+        <section class="results-column">
+            <h2 class="column-title">Si te duermes ahora...</h2>
+            <div id="results-now" class="space-y-3"></div>
+        </section>
+        <section class="results-column">
+            <div class="column-header">
+                <h2 class="column-title">...o si tardas en dormir</h2>
+                <div class="delay-input-wrapper">
+                    <input type="number" id="delay-minutes-input" value="5" min="1" max="60" class="delay-input">
+                    <span>minutos</span>
+                </div>
+            </div>
+            <div id="results-later" class="space-y-3"></div>
+        </section>
+    </div>
+
+    <footer class="app-footer">
+        <p>Diseñado para un despertar perfecto. Por Renzo.</p>
+    </footer>
+</main>
+
+<!-- Modal para seleccionar la hora -->
+<div id="time-picker-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3 class="modal-title">Elige una hora para dormir</h3>
+        <div class="time-selectors">
+            <div class="time-selector">
+                <label for="hour-select">Hora</label>
+                <select id="hour-select"></select>
+            </div>
+            <div class="time-selector">
+                <label for="minute-select">Minutos</label>
+                <select id="minute-select"></select>
+            </div>
+            <div class="time-selector">
+                <label for="ampm-select">AM/PM</label>
+                <select id="ampm-select">
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button id="use-current-time-btn" class="modal-button secondary">Usar hora actual</button>
+            <button id="confirm-time-btn" class="modal-button primary">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
