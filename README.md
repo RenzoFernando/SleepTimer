@@ -28,6 +28,7 @@ La aplicación calcula las horas óptimas para programar tu alarma basándose en
 
 El proyecto está organizado de manera limpia y sencilla para facilitar su mantenimiento.
 
+```
 SleepTimer/  
 │  
 ├── extras/  
@@ -35,7 +36,7 @@ SleepTimer/
 │ └── script.js # Lógica de la aplicación  
 │  
 └── index.html # Archivo principal de la aplicación  
-
+```
 
 ## **Autor**
 
