@@ -23,10 +23,10 @@
 <!-- Fondo animado de estrellas -->
 <div id="stars-container"></div>
 
-<main class="w-full max-w-4xl mx-auto z-10">
+<main class="w-full max-w-lg mx-auto z-10">
     <header class="text-center mb-8">
         <div class="flex justify-center items-center gap-3 mb-2">
-            <!-- Icono de Luna Mejorado -->
+            <!-- Icono de Luna -->
             <svg class="w-10 h-10 text-cyan-300" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M15.1851 3.25C11.8384 3.25 9.03515 5.43839 8.21939 8.51042C5.35818 9.07008 3.25 11.5335 3.25 14.625C3.25 18.1023 6.14772 21 9.625 21H18.375C20.9372 21 23 18.9372 23 16.375C23 14.1161 21.3111 12.2183 19.1848 11.8542C19.6014 10.3703 19.5222 8.78173 18.9686 7.33336C18.415 5.88499 17.4164 4.65631 16.1249 3.82981C15.8251 3.63405 15.5086 3.48483 15.1851 3.38831" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -39,20 +39,19 @@
         <button id="open-time-modal-btn" class="control-button">Elegir otra hora</button>
     </div>
 
+    <!-- Controles de tiempo para dormir -->
+    <div class="text-center mb-6">
+        <h2 class="column-title mb-3">Suponiendo que tardas en dormir...</h2>
+        <div class="delay-input-wrapper">
+            <input type="number" id="delay-minutes-input" value="5" min="0" max="60" class="delay-input">
+            <span>minutos</span>
+        </div>
+    </div>
+
+    <!-- Rejilla de resultados con una sola columna -->
     <div class="results-grid">
         <section class="results-column">
-            <h2 class="column-title">Si te duermes ahora...</h2>
-            <div id="results-now" class="space-y-3"></div>
-        </section>
-        <section class="results-column">
-            <div class="column-header">
-                <h2 class="column-title">...o si tardas en dormir</h2>
-                <div class="delay-input-wrapper">
-                    <input type="number" id="delay-minutes-input" value="5" min="1" max="60" class="delay-input">
-                    <span>minutos</span>
-                </div>
-            </div>
-            <div id="results-later" class="space-y-3"></div>
+            <div id="results-container" class="space-y-3"></div>
         </section>
     </div>
 
@@ -85,6 +84,17 @@
         <div class="modal-actions">
             <button id="use-current-time-btn" class="modal-button secondary">Usar hora actual</button>
             <button id="confirm-time-btn" class="modal-button primary">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para información del ciclo -->
+<div id="info-modal" class="modal-overlay hidden">
+    <div class="modal-content info-modal-content">
+        <h3 id="info-modal-title" class="modal-title">Información del Ciclo</h3>
+        <p id="info-modal-text" class="info-modal-text"></p>
+        <div class="modal-actions">
+            <button id="close-info-modal-btn" class="modal-button primary">Entendido</button>
         </div>
     </div>
 </div>
