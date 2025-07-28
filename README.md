@@ -35,11 +35,9 @@ El proyecto está organizado de manera limpia y sencilla para facilitar su mante
 
 ```
 SleepTimer/
-│
 ├── extras/
 │   ├── style.css
 │   └── script.js
-│
 └── index.html
 ```
 
