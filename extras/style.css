@@ -1,4 +1,3 @@
-/* --- Variables de Color y Configuración Base --- */
 :root {
     --bg-dark-blue: #0d1117;
     --bg-gradient-start: #010409;
@@ -19,22 +18,12 @@ body {
     overflow-x: hidden;
 }
 
-/* --- Fondo de Estrellas Animado --- */
 #stars-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
-    overflow: hidden;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
 }
 
 .star {
-    position: absolute;
-    background-color: white;
-    border-radius: 50%;
-    animation: twinkle 5s infinite ease-in-out;
+    position: absolute; background-color: white; border-radius: 50%; animation: twinkle 5s infinite ease-in-out;
 }
 
 @keyframes twinkle {
@@ -42,117 +31,84 @@ body {
     50% { opacity: 1; transform: scale(1.2); }
 }
 
-/* --- Estilos de la App Principal --- */
+main {
+    animation: main-fade-in 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes main-fade-in {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .app-title {
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: white;
-    letter-spacing: -0.05em;
-    text-shadow: 0 0 15px var(--accent-glow);
+    font-size: 2.5rem; font-weight: 900; color: white; letter-spacing: -0.05em; text-shadow: 0 0 15px var(--accent-glow);
 }
 
 .subtitle-text {
-    font-size: 1.125rem;
-    color: var(--text-secondary);
-    transition: color 0.3s;
+    font-size: 1.125rem; color: var(--text-secondary); transition: color 0.3s;
 }
 
-.controls-container {
-    text-align: center;
-    margin-bottom: 2rem;
+.app-nav {
+    display: flex; justify-content: center; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 9999px; padding: 0.5rem; max-width: 350px; margin: 1rem auto 0;
+}
+.nav-link {
+    flex: 1; text-align: center; padding: 0.5rem 1rem; color: var(--text-secondary); font-weight: 700; text-decoration: none; border-radius: 9999px; transition: all 0.3s ease;
+}
+.nav-link.active {
+    background-color: var(--accent-cyan); color: var(--bg-dark-blue); box-shadow: 0 0 15px var(--accent-glow);
+}
+.nav-link:not(.active):hover {
+    background-color: rgba(255, 255, 255, 0.1); color: var(--text-primary);
 }
 
-.control-button {
-    background: var(--accent-cyan);
-    color: var(--bg-dark-blue);
-    font-weight: 700;
-    padding: 0.75rem 2rem;
-    border-radius: 9999px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    box-shadow: 0 0 20px var(--accent-glow);
+.control-button-secondary {
+    background: none; border: none; color: var(--accent-cyan); font-weight: 700; cursor: pointer; transition: all 0.2s ease;
 }
-.control-button:hover {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 0 35px var(--accent-glow);
-}
-
-.results-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-}
-
-.results-column {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+.control-button-secondary:hover {
+    text-decoration: underline; filter: brightness(1.2);
 }
 
 .column-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: white;
-    text-align: center;
+    font-size: 1.25rem; font-weight: 700; color: white; text-align: center;
 }
 
 .delay-input-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-secondary);
+    display: flex; justify-content: center; align-items: center; gap: 0.5rem; color: var(--text-secondary);
 }
 
 .delay-input {
-    width: 60px;
-    text-align: center;
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    color: var(--text-primary);
-    border-radius: 0.375rem;
-    padding: 0.25rem;
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
+    width: 60px; text-align: center; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-primary); border-radius: 0.375rem; padding: 0.25rem; font-size: 1.1rem; transition: all 0.3s ease;
 }
 .delay-input:focus {
-    outline: none;
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 10px var(--accent-glow);
+    outline: none; border-color: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-glow);
 }
 
-.app-footer {
-    text-align: center;
-    margin-top: 3rem;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    opacity: 0.7;
+.date-input {
+    background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-primary); border-radius: 0.5rem; padding: 0.5rem 1rem; font-size: 1.1rem; font-weight: 700; text-align: center; color-scheme: dark;
+}
+.date-input:focus {
+    outline: none; border-color: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-glow);
+}
+.time-selectors-inline {
+    display: flex; justify-content: center; align-items: center; gap: 0.5rem; font-size: 1.5rem; font-weight: 700; color: var(--accent-cyan);
+}
+.time-selectors-inline select {
+    background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-primary); border-radius: 0.5rem; padding: 0.5rem; font-size: 1.25rem; font-weight: 700; -webkit-appearance: none; appearance: none; text-align: center;
+}
+.time-selectors-inline select:focus {
+    outline: none; border-color: var(--accent-cyan);
 }
 
-/* --- Tarjetas de Resultados con Animación Mejorada --- */
+.results-grid {
+    display: grid; grid-template-columns: 1fr; gap: 1rem;
+}
+
+.results-column {
+    display: flex; flex-direction: column; gap: 0.75rem;
+}
+
 .result-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 0.75rem;
-    padding: 1rem;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.3s ease;
-    opacity: 0;
-    transform: perspective(800px) translateY(30px) rotateX(-10deg);
-    animation: cardFadeIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
-@keyframes cardFadeIn {
-    to {
-        opacity: 1;
-        transform: perspective(800px) translateY(0) rotateX(0);
-    }
-}
-
-.result-card:hover {
-    transform: translateY(-5px) scale(1.02);
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 0.75rem; padding: 1rem; position: relative; overflow: hidden; transition: transform 0.3s ease; opacity: 0; transform: perspective(800px) translateY(30px) rotateX(-10deg); animation: cardFadeIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 .result-card::before {
@@ -166,14 +122,21 @@ body {
     animation: rotate 4s linear infinite;
     opacity: 0.6;
 }
+
 @keyframes rotate {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
 
+@keyframes cardFadeIn {
+    to { opacity: 1; transform: perspective(800px) translateY(0) rotateX(0); }
+}
+
+.result-card:hover { transform: translateY(-5px) scale(1.02); }
+
 .card-content {
     position: relative;
-    z-index: 2;
+    /* z-index: 2; <-- ESTE ERA EL ERROR, SE HA ELIMINADO */
     background: var(--bg-dark-blue);
     border-radius: 0.6rem;
     padding: 1rem;
@@ -183,139 +146,72 @@ body {
     gap: 1rem;
 }
 
-/* Colores de la aurora */
 .glow-poor { --glow-color: #ef4444; }
 .glow-acceptable { --glow-color: #f59e0b; }
 .glow-optimal { --glow-color: #22c55e; }
 
-.info-button {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-}
-.info-button:hover {
-    color: var(--text-primary);
-    background-color: rgba(255, 255, 255, 0.1);
-    transform: scale(1.1);
+.app-footer {
+    text-align: center; margin-top: 3rem; color: var(--text-secondary); font-size: 0.875rem; opacity: 0.7;
 }
 
-/* --- Modales con Animación Mejorada --- */
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 50;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    pointer-events: none;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 50; opacity: 0; transition: opacity 0.4s ease; pointer-events: none;
 }
 .modal-overlay:not(.hidden) {
-    opacity: 1;
-    pointer-events: auto;
+    opacity: 1; pointer-events: auto;
 }
 
 .modal-content {
-    background: #161b22;
-    border: 1px solid var(--card-border);
-    border-radius: 1rem;
-    padding: 2rem;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    transform: translateY(20px) scale(0.95);
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background: #161b22; border: 1px solid var(--card-border); border-radius: 1rem; padding: 2rem; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); transform: translateY(20px) scale(0.95); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .modal-overlay:not(.hidden) .modal-content {
     transform: translateY(0) scale(1);
 }
 
 .modal-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    text-align: center;
-    margin-bottom: 1.5rem;
+    font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem;
 }
 
 .time-selectors {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 2rem;
+    display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 2rem;
 }
 
 .time-selector {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
 }
 .time-selector label {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-size: 0.875rem; color: var(--text-secondary);
 }
 .time-selector select {
-    background: var(--bg-dark-blue);
-    border: 1px solid var(--card-border);
-    color: var(--text-primary);
-    border-radius: 0.5rem;
-    padding: 0.5rem 1rem;
-    font-size: 1.25rem;
-    -webkit-appearance: none;
-    appearance: none;
-    text-align: center;
-}
-.time-selector select:focus {
-    outline: none;
-    border-color: var(--accent-cyan);
+    background: var(--bg-dark-blue); border: 1px solid var(--card-border); color: var(--text-primary); border-radius: 0.5rem; padding: 0.5rem 1rem; font-size: 1.25rem; -webkit-appearance: none; appearance: none; text-align: center;
 }
 
 .modal-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1.5rem;
+    display: flex; gap: 1rem; margin-top: 1.5rem;
 }
 
 .modal-button {
-    flex-grow: 1;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    border: none;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    flex-grow: 1; padding: 0.75rem; border-radius: 0.5rem; border: none; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
 }
 .modal-button.primary {
-    background: var(--accent-cyan);
-    color: var(--bg-dark-blue);
+    background: var(--accent-cyan); color: var(--bg-dark-blue);
 }
 .modal-button.secondary {
-    background: var(--card-bg);
-    color: var(--text-primary);
-    border: 1px solid var(--card-border);
+    background: var(--card-bg); color: var(--text-primary);
 }
 .modal-button:hover {
     transform: translateY(-2px);
 }
 
-/* Estilos específicos para el modal de info */
-.info-modal-text {
-    color: var(--text-secondary);
-    line-height: 1.6;
-    text-align: center;
+.info-button {
+    background: transparent; border: none; color: var(--text-secondary); cursor: pointer; padding: 0.25rem; border-radius: 50%; transition: all 0.3s ease; flex-shrink: 0;
+}
+.info-button:hover {
+    color: var(--text-primary); background-color: rgba(255, 255, 255, 0.1); transform: scale(1.1);
 }
 
-.hidden {
-    display: none;
+.info-modal-text {
+    color: var(--text-secondary); line-height: 1.6; text-align: center;
 }
+
+.hidden { display: none; }

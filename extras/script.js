@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-
     // --- CONSTANTES ---
     const PREFERENCE_KEY = 'sleepTimer-delayMinutes';
 
@@ -7,8 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const subtitleEl = document.getElementById('subtitle');
     const resultsContainer = document.getElementById('results-container');
     const delayMinutesInput = document.getElementById('delay-minutes-input');
-
-    // Modal de tiempo
     const timePickerModal = document.getElementById('time-picker-modal');
     const openModalBtn = document.getElementById('open-time-modal-btn');
     const confirmTimeBtn = document.getElementById('confirm-time-btn');
@@ -16,8 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const hourSelect = document.getElementById('hour-select');
     const minuteSelect = document.getElementById('minute-select');
     const ampmSelect = document.getElementById('ampm-select');
-
-    // Modal de información
     const infoModal = document.getElementById('info-modal');
     const infoModalTitle = document.getElementById('info-modal-title');
     const infoModalText = document.getElementById('info-modal-text');
@@ -27,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let timerInterval = null;
     let baseTime = new Date();
 
-    // --- DATOS DE LOS CICLOS ---
+    // --- DATOS DE LOS CICLOS (9 CICLOS) ---
     const CYCLE_DETAILS = [
         { text: 'Siesta rápida', glowClass: 'glow-poor', description: 'Un ciclo (1.5h) es ideal para una siesta de poder que mejora el estado de alerta y el rendimiento motor, útil si tienes poco tiempo.' },
         { text: 'Descanso corto', glowClass: 'glow-poor', description: 'Dos ciclos (3h) te ayudarán a sentirte más descansado, mejorando la memoria y la función cognitiva. Es una buena opción para una noche corta.' },
@@ -40,29 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
         { text: 'Máxima energía', glowClass: 'glow-optimal', description: 'Nueve ciclos (13.5h) es más de lo que la mayoría necesita, pero puede ser beneficioso durante períodos de enfermedad o recuperación intensa.' }
     ];
 
-    // --- INICIALIZACIÓN ---
     const init = () => {
         createStars(100);
         loadPreferences();
         populateTimeSelectors();
         setupEventListeners();
         startAutoUpdate();
-        updateApp();
     };
 
-    // --- LÓGICA DE PREFERENCIAS ---
-    const loadPreferences = () => {
-        const savedDelay = localStorage.getItem(PREFERENCE_KEY);
-        if (savedDelay !== null) {
-            delayMinutesInput.value = savedDelay;
-        }
-    };
-
-    const savePreferences = () => {
-        localStorage.setItem(PREFERENCE_KEY, delayMinutesInput.value);
-    };
-
-    // --- LÓGICA DE LA UI ---
     const createStars = (count) => {
         const container = document.getElementById('stars-container');
         if (!container) return;
@@ -79,6 +59,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const loadPreferences = () => {
+        const savedDelay = localStorage.getItem(PREFERENCE_KEY);
+        if (savedDelay !== null) {
+            delayMinutesInput.value = savedDelay;
+        }
+    };
+
+    const savePreferences = () => {
+        localStorage.setItem(PREFERENCE_KEY, delayMinutesInput.value);
+    };
+
     const populateTimeSelectors = () => {
         for (let i = 1; i <= 12; i++) {
             hourSelect.innerHTML += `<option value="${i}">${String(i).padStart(2, '0')}</option>`;
@@ -93,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
         results.forEach((result, index) => {
             const card = document.createElement('div');
             card.className = `result-card ${result.classification.glowClass}`;
-            // Aumento del retraso para una cascada más notable
             card.style.animationDelay = `${index * 80}ms`;
             card.innerHTML = `
                 <div class="card-content">
@@ -102,24 +92,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-sm font-semibold">${result.classification.text}</p>
                         <p class="text-xs text-gray-400">${result.cycle} ciclo${result.cycle > 1 ? 's' : ''}</p>
                     </div>
-                    <button class="info-button" data-cycle-index="${index}" aria-label="Más información">
+                     <button class="info-button" data-cycle-index="${index}" aria-label="Más información">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                     </button>
-                </div>
-            `;
+                </div>`;
             container.appendChild(card);
         });
     };
 
-    // --- LÓGICA DE TIEMPO Y CÁLCULOS ---
     const formatTime = (date) => date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     const calculateWakeUpTimes = (startTime) => {
         return Array.from({ length: 9 }, (_, i) => {
             const cycleNum = i + 1;
             const wakeUpTime = new Date(startTime.getTime() + cycleNum * 90 * 60 * 1000);
-            const classification = CYCLE_DETAILS[i];
-            return { cycle: cycleNum, time: formatTime(wakeUpTime), classification };
+            return { cycle: cycleNum, time: formatTime(wakeUpTime), classification: CYCLE_DETAILS[i] };
         });
     };
 
@@ -139,18 +126,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- MANEJADORES DE EVENTOS ---
     const setupEventListeners = () => {
         openModalBtn.addEventListener('click', () => openModal(timePickerModal));
         timePickerModal.addEventListener('click', (e) => e.target === timePickerModal && closeModal(timePickerModal));
         confirmTimeBtn.addEventListener('click', handleConfirmTime);
         useCurrentTimeBtn.addEventListener('click', handleUseCurrentTime);
-
         delayMinutesInput.addEventListener('input', () => {
             updateApp();
             savePreferences();
         });
-
         resultsContainer.addEventListener('click', handleInfoClick);
         closeInfoModalBtn.addEventListener('click', () => closeModal(infoModal));
         infoModal.addEventListener('click', (e) => e.target === infoModal && closeModal(infoModal));
@@ -192,13 +176,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let hour = parseInt(hourSelect.value, 10);
         const minute = parseInt(minuteSelect.value, 10);
         const ampm = ampmSelect.value;
-
         if (ampm === 'PM' && hour < 12) hour += 12;
         if (ampm === 'AM' && hour === 12) hour = 0;
-
         baseTime = new Date();
         baseTime.setHours(hour, minute, 0, 0);
-
         stopAutoUpdate();
         updateApp();
         closeModal(timePickerModal);
@@ -206,11 +187,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const handleUseCurrentTime = () => {
         startAutoUpdate();
-        updateApp();
         closeModal(timePickerModal);
     };
 
-    // --- TEMPORIZADORES ---
     const startAutoUpdate = () => {
         if (timerInterval) clearInterval(timerInterval);
         baseTime = new Date();
@@ -226,6 +205,5 @@ document.addEventListener('DOMContentLoaded', () => {
         timerInterval = null;
     };
 
-    // --- INICIAR LA APP ---
     init();
 });
