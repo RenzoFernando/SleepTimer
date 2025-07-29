@@ -1,25 +1,26 @@
-# **SleepTimer**
-
 <p align="center">
   <a href="https://renzofernando.github.io/SleepTimer/" target="_blank">
     <img src="https://img.shields.io/badge/Ver_Aplicación-Online-30b6c4?style=for-the-badge&logo=clock&logoColor=white" alt="Ver Aplicación Online">
   </a>
 </p>
 
-Una calculadora de ciclos de sueño inteligente y elegante, diseñada para ayudarte a despertar en el momento justo, evitando la inercia del sueño y la sensación de cansancio durante el día.
+# **SleepTimer**
 
-La aplicación calcula las horas óptimas para programar tu alarma basándose en ciclos de sueño de 90 minutos, considerando el tiempo que tardas en dormirte para una precisión máxima.
+Una calculadora de ciclos de sueño de doble propósito, diseñada para ayudarte a despertar en el momento justo y planificar tu noche a la perfección, evitando la inercia del sueño y la sensación de cansancio.
 
 ## **Características Principales**
 
-* **Cálculo Preciso:** Evita la inercia del sueño al programar tu alarma para que suene al final de un ciclo de 90 minutos.
-* **Detección Automática:** Utiliza la hora actual de tu dispositivo para mostrarte al instante las horas de despertar recomendadas.
-* **Planificación a Futuro:** ¿No te vas a dormir ahora? Usa el selector de hora para calcular los ciclos desde cualquier momento que elijas.
-* **Tiempo para Dormir Ajustable:** Configura el tiempo que estimas que tardarás en conciliar el sueño (de 0 a 60 minutos) para obtener cálculos perfectos.
-* **Preferencias Guardadas:** La aplicación recuerda tu última configuración de "minutos para dormir", para que no tengas que ajustarla cada vez.
-* **Información Detallada de Ciclos:** Cada hora sugerida incluye un botón de información que explica los beneficios de ese ciclo de sueño específico, desde siestas rápidas hasta un descanso totalmente reparador.
-* **Clasificación Visual Clara:** Los resultados se organizan con un código de color intuitivo para que puedas tomar la mejor decisión sobre tu descanso.
-* **Diseño Inmersivo:** Una interfaz oscura y minimalista con animaciones sutiles, diseñada para ser usada de noche sin causar fatiga visual.
+* **Doble Funcionalidad:**
+    * **Calculadora de Despertar:** Te dice a qué hora debes despertar si te duermes ahora.
+    * **Calculadora de Dormir:** Te dice a qué hora debes ir a dormir para despertar a la hora que necesitas.
+* **Cálculo Preciso:** Evita la inercia del sueño al programar tus alarmas basándose en ciclos de 90 minutos.
+* **Tiempo para Dormir Ajustable:** Configura el tiempo que estimas que tardarás en conciliar el sueño (de 0 a 60 minutos) para obtener cálculos perfectos en ambas calculadoras.
+* **Planificación a Futuro:**
+    * En la calculadora de despertar, puedes elegir una hora de inicio diferente a la actual.
+    * En la calculadora de dormir, puedes seleccionar cualquier fecha y hora futuras para tu alarma.
+* **Preferencias Guardadas:** La aplicación recuerda tus configuraciones (minutos para dormir y hora de despertar) para una experiencia más rápida.
+* **Información Detallada de Ciclos:** La calculadora de despertar incluye un botón de información que explica los beneficios de cada ciclo de sueño.
+* **Diseño Inmersivo y Animado:** Una interfaz oscura y minimalista con animaciones fluidas y un borde de aurora en las tarjetas de resultados, diseñada para ser usada de noche sin causar fatiga visual.
 * **Totalmente Responsivo:** Funciona perfectamente en computadoras de escritorio y dispositivos móviles.
 
 ## **Tecnologías Utilizadas**
@@ -31,14 +32,18 @@ La aplicación calcula las horas óptimas para programar tu alarma basándose en
 
 ## **Estructura del Proyecto**
 
-El proyecto está organizado de manera limpia y sencilla para facilitar su mantenimiento.
+El proyecto está organizado de manera limpia para soportar su doble funcionalidad.
 
 ```
 SleepTimer/
+│
 ├── extras/
-│   ├── style.css
-│   └── script.js
-└── index.html
+│   ├── style.css   (Estilos compartidos)
+│   ├── script.js   (Lógica para 'Hora de Despertar')
+│   └── wakeup.js   (Lógica para 'Hora de Dormir')
+│
+├── index.html      (Página 'Hora de Despertar')
+└── wakeup.html     (Página 'Hora de Dormir')
 ```
 
 ## **Autor**
