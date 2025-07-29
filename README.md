@@ -1,10 +1,10 @@
+# **SleepTimer**
+
 <p align="center">
   <a href="https://renzofernando.github.io/SleepTimer/" target="_blank">
     <img src="https://img.shields.io/badge/Ver_Aplicación-Online-30b6c4?style=for-the-badge&logo=clock&logoColor=white" alt="Ver Aplicación Online">
   </a>
 </p>
-
-# **SleepTimer**
 
 Una calculadora de ciclos de sueño de doble propósito, diseñada para ayudarte a despertar en el momento justo y planificar tu noche a la perfección, evitando la inercia del sueño y la sensación de cansancio.
 
