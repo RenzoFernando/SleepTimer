@@ -36,14 +36,14 @@ El proyecto está organizado de manera limpia para soportar su doble funcionalid
 
 ```
 SleepTimer/
-│
-├── extras/
-│   ├── style.css   (Estilos compartidos)
-│   ├── common.js   (Lógica para 'Hora de Despertar')
-│   └── despertar.js   (Lógica para 'Hora de Dormir')
-│
-├── index.html      (Página 'Hora de Despertar')
-└── wakeup.html     (Página 'Hora de Dormir')
+├── extras
+│   ├── common.js
+│   ├── despertar.js
+│   ├── dormir.html
+│   ├── dormir.js
+│   ├── favicon.ico
+│   └── style.css
+└── index.html
 ```
 
 ## **Autor**
