@@ -3,32 +3,40 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SleepTimer - ¿A qué hora despertar?</title>
-    <meta name="description" content="Calcula las horas óptimas para despertar basándote en ciclos de sueño.">
-    <meta name="author" content="Renzo Fernando">
+    <title>SleepTimer · Hora de Despertar</title>
 
-    <!-- Tu favicon real (pon tu .ico en la raíz) -->
-    <link rel="icon" href="extras/favicon.ico">
-    <meta name="theme-color" content="#0d1117">
+    <meta name="description" content="Calcula las horas óptimas para despertar basándote en ciclos de sueño." />
+    <meta name="author" content="Renzo Fernando" />
+    <meta name="theme-color" content="#010409" />
+    <meta name="color-scheme" content="dark" />
 
+    <!-- Favicon (ahora en /extras) -->
+    <link rel="icon" href="extras/favicon.ico" />
+
+    <!-- Tailwind (CDN) + Fuente -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="extras/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
+
+    <!-- Estilos y scripts -->
+    <link rel="stylesheet" href="extras/style.css" />
+    <script src="extras/common.js" defer></script>
     <script src="extras/despertar.js" defer></script>
 </head>
 
-<body class="flex items-center justify-center min-h-screen p-4">
+<body>
+<!-- Fondo -->
 <div id="stars-container" aria-hidden="true"></div>
 
-<main class="w-full max-w-lg mx-auto z-10" role="main">
-    <header class="text-center mb-6">
-        <div class="flex justify-center items-center gap-3 mb-4">
-            <svg class="w-10 h-10 text-cyan-300" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<main class="app-shell" role="main">
+    <header class="app-header">
+        <div class="brand-row">
+            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M15.1851 3.25C11.8384 3.25 9.03515 5.43839 8.21939 8.51042C5.35818 9.07008 3.25 11.5335 3.25 14.625C3.25 18.1023 6.14772 21 9.625 21H18.375C20.9372 21 23 18.9372 23 16.375C23 14.1161 21.3111 12.2183 19.1848 11.8542C19.6014 10.3703 19.5222 8.78173 18.9686 7.33336C18.415 5.88499 17.4164 4.65631 16.1249 3.82981C15.8251 3.63405 15.5086 3.48483 15.1851 3.38831"
                       stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
+
             <h1 class="app-title">SleepTimer</h1>
         </div>
 
@@ -38,38 +46,53 @@
         </nav>
     </header>
 
-    <section class="text-center mb-6">
+    <section class="section">
         <p id="subtitle" class="subtitle-text">
-            Hora base: <span id="current-time" class="font-bold text-white"></span>
+            Hora base: <span id="current-time" class="time-strong"></span>
         </p>
-        <button id="open-time-modal-btn" class="control-button-secondary mt-2" type="button">
-            cambiar hora base
-        </button>
-    </section>
 
-    <section class="text-center mb-6">
-        <h2 class="column-title mb-3">Tiempo estimado para conciliar el sueño</h2>
-        <div class="delay-input-wrapper">
-            <input type="number" id="delay-minutes-input" value="5" min="0" max="60" class="delay-input"
-                   inputmode="numeric" aria-label="Minutos que tardas en dormir">
-            <span>min</span>
+        <div class="section-actions">
+            <button id="open-time-modal-btn" class="control-button-secondary" type="button">
+                cambiar hora base
+            </button>
+
+            <button id="wake-lock-btn" class="control-button-secondary" type="button" aria-pressed="false">
+                mantener pantalla encendida
+            </button>
         </div>
     </section>
 
-    <section class="glass-panel mb-6" aria-label="Información general">
+    <section class="section">
+        <h2 class="section-title">Tiempo estimado para conciliar el sueño</h2>
+
+        <div class="delay-input-wrapper">
+            <input
+                    type="number"
+                    id="delay-minutes-input"
+                    value="5"
+                    min="0"
+                    max="60"
+                    class="delay-input"
+                    inputmode="numeric"
+                    aria-label="Minutos que tardas en dormir"
+            />
+            <span class="muted">min</span>
+        </div>
+    </section>
+
+    <section class="glass-panel section" aria-label="Información general">
         <p class="glass-title">Cómo leer los resultados</p>
         <p class="glass-text" id="general-info">
             Cada tarjeta representa un ciclo completo (≈ 90 min). Recomendamos despertar entre ciclos para evitar la inercia del sueño.
         </p>
     </section>
 
-    <h2 class="column-title mb-4">Tus mejores horas para despertar</h2>
-
-    <div id="results-container" class="results-grid" aria-live="polite"></div>
+    <h2 class="section-title section">Tus mejores horas para despertar</h2>
+    <div id="results-container" class="results-list" aria-live="polite"></div>
 
     <footer class="app-footer">
         <p>Diseñado para un despertar perfecto.</p>
-        <p>© 2025 Renzo Fernando Mosquera Daza · SleepTimer</p>
+        <p>© <span id="year"></span> Renzo Fernando Mosquera Daza · SleepTimer</p>
     </footer>
 </main>
 
@@ -120,6 +143,5 @@
         </div>
     </div>
 </div>
-
 </body>
 </html>

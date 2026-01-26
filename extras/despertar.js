@@ -1,547 +1,402 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // -----------------------------
-    // Preferencias
-    // -----------------------------
-    const PREFERENCE_DELAY_KEY = 'sleepTimer-delayMinutes';
-    const PREFERENCE_BASE_TIME_KEY = 'sleepTimer-baseTime'; // { mode: 'auto'|'manual', hour, minute, ampm }
+/* ==========================================================================
+   SleepTimer · despertar.js (para index.html)
+   Calcula mejores horas para despertar a partir de una hora base + delay.
+   ========================================================================== */
 
-    // -----------------------------
-    // DOM
-    // -----------------------------
-    const subtitleEl = document.getElementById('subtitle');
-    const currentTimeEl = document.getElementById('current-time');
-    const resultsContainer = document.getElementById('results-container');
-    const delayMinutesInput = document.getElementById('delay-minutes-input');
-    const generalInfoEl = document.getElementById('general-info');
+(() => {
+    'use strict';
 
-    const toastEl = document.getElementById('toast');
+    const {
+        CYCLES,
+        formatTime,
+        formatHours,
+        glowColorForCycle,
+        createStars,
+        showToast,
+        copyToClipboard,
+        openModal,
+        closeModal,
+        applyCurrentYear,
+        setupWakeLockButton,
+        openAndroidAlarm,
+        handleAlarmFallback
+    } = window.SleepTimer || {};
 
-    const timePickerModal = document.getElementById('time-picker-modal');
-    const openModalBtn = document.getElementById('open-time-modal-btn');
-    const confirmTimeBtn = document.getElementById('confirm-time-btn');
-    const useCurrentTimeBtn = document.getElementById('use-current-time-btn');
-    const hourSelect = document.getElementById('hour-select');
-    const minuteSelect = document.getElementById('minute-select');
-    const ampmSelect = document.getElementById('ampm-select');
+    // Si common.js no cargó, evita romper todo.
+    if (!CYCLES) return;
 
-    const infoModal = document.getElementById('info-modal');
-    const infoModalTitle = document.getElementById('info-modal-title');
-    const infoModalText = document.getElementById('info-modal-text');
-    const closeInfoModalBtn = document.getElementById('close-info-modal-btn');
+    const STORAGE = {
+        BASE_TIME: 'sleepTimer.baseTime.v3',        // ISO string o 'auto'
+        DELAY_MINUTES: 'sleepTimer.delayMinutes.v3' // number
+    };
 
-    // -----------------------------
+    const els = {
+        currentTime: document.getElementById('current-time'),
+        subtitle: document.getElementById('subtitle'),
+        delayInput: document.getElementById('delay-minutes-input'),
+        results: document.getElementById('results-container'),
+
+        timeModal: document.getElementById('time-picker-modal'),
+        openTimeModalBtn: document.getElementById('open-time-modal-btn'),
+        useCurrentTimeBtn: document.getElementById('use-current-time-btn'),
+        confirmTimeBtn: document.getElementById('confirm-time-btn'),
+
+        hourSelect: document.getElementById('hour-select'),
+        minuteSelect: document.getElementById('minute-select'),
+        ampmSelect: document.getElementById('ampm-select'),
+
+        infoModal: document.getElementById('info-modal'),
+        infoModalText: document.getElementById('info-modal-text'),
+        closeInfoModalBtn: document.getElementById('close-info-modal-btn')
+    };
+
     // Estado
-    // -----------------------------
-    let timerInterval = null;
-    let baseTime = new Date();
+    let baseMode = 'auto'; // 'auto' o 'manual'
+    let manualBaseTime = null; // Date
+    let clockTimer = null;
 
-    // -----------------------------
-    // Datos de ciclos (1..9)
-    // -----------------------------
-    const CYCLES = [
-        { title: 'Siesta rápida', description: 'Un ciclo (1.5h) es ideal para una siesta de poder: mejora estado de alerta y rendimiento cuando tienes poco tiempo.' },
-        { title: 'Descanso corto', description: 'Dos ciclos (3h) ayudan a recuperar energía y memoria. Buena opción para una noche corta.' },
-        { title: 'Sueño reparador', description: 'Tres ciclos (4.5h) incluyen fases profundas y REM. Es el mínimo razonable para no cortar REM.' },
-        { title: 'Descanso aceptable', description: 'Cuatro ciclos (6h) proporcionan recuperación física y mental considerable.' },
-        { title: 'Buen descanso', description: 'Cinco ciclos (7.5h) se acercan a la recomendación típica para adultos. Despertarás más fresco.' },
-        { title: 'Descanso ideal', description: 'Seis ciclos (9h) es muy completo: recuperación profunda y un despertar normalmente más suave.' },
-        { title: 'Sueño profundo', description: 'Siete ciclos (10.5h) pueden ayudar si vienes con deuda de sueño, entrenamiento intenso o recuperación.' },
-        { title: 'Totalmente recuperado', description: 'Ocho ciclos (12h) es más de lo común, pero útil en periodos de descanso fuerte o convalecencia.' },
-        { title: 'Máxima energía', description: 'Nueve ciclos (13.5h) es mucho para la mayoría, pero puede servir en recuperación muy intensa.' }
-    ].map((c, idx) => ({
-        ...c,
-        cycles: idx + 1,
-        durationMinutes: (idx + 1) * 90,
-        durationHours: ((idx + 1) * 90) / 60
-    }));
+    /* ====================================================================== */
+    /* Init                                                                    */
+    /* ====================================================================== */
 
-    // -----------------------------
-    // Utils
-    // -----------------------------
+    document.addEventListener('DOMContentLoaded', () => {
+        createStars();
+        applyCurrentYear();
+        setupWakeLockButton();
+        handleAlarmFallback(); // si el intent no se pudo resolver
+
+        hydrateDelay();
+        hydrateBaseTime();
+        buildTimePickerOptions();
+
+        bindUI();
+        startClock();
+        render();
+    });
+
+    /* ====================================================================== */
+    /* Storage                                                                 */
+    /* ====================================================================== */
+
+    const hydrateDelay = () => {
+        const saved = Number(localStorage.getItem(STORAGE.DELAY_MINUTES));
+        if (Number.isFinite(saved)) {
+            els.delayInput.value = String(Math.max(0, Math.min(60, saved)));
+        } else {
+            els.delayInput.value = '5';
+        }
+    };
+
+    const saveDelay = () => {
+        const v = Number(els.delayInput.value);
+        const safe = Number.isFinite(v) ? Math.max(0, Math.min(60, v)) : 5;
+        localStorage.setItem(STORAGE.DELAY_MINUTES, String(safe));
+    };
+
+    const hydrateBaseTime = () => {
+        const saved = localStorage.getItem(STORAGE.BASE_TIME);
+        if (!saved || saved === 'auto') {
+            baseMode = 'auto';
+            manualBaseTime = null;
+            return;
+        }
+
+        const d = new Date(saved);
+        if (isNaN(d.getTime())) {
+            baseMode = 'auto';
+            manualBaseTime = null;
+            return;
+        }
+
+        baseMode = 'manual';
+        manualBaseTime = d;
+    };
+
+    const saveBaseTimeAuto = () => localStorage.setItem(STORAGE.BASE_TIME, 'auto');
+
+    const saveBaseTimeManual = (date) => localStorage.setItem(STORAGE.BASE_TIME, date.toISOString());
+
+    /* ====================================================================== */
+    /* Clock & Base time                                                      */
+    /* ====================================================================== */
+
+    const getBaseTime = () => {
+        if (baseMode === 'manual' && manualBaseTime) return new Date(manualBaseTime);
+        return new Date(); // auto
+    };
+
+    const startClock = () => {
+        stopClock();
+        updateCurrentTimeLabel();
+
+        // Solo actualiza si estamos en modo auto
+        clockTimer = window.setInterval(() => {
+            if (baseMode === 'auto') updateCurrentTimeLabel();
+        }, 1000);
+    };
+
+    const stopClock = () => {
+        if (clockTimer) window.clearInterval(clockTimer);
+        clockTimer = null;
+    };
+
+    const updateCurrentTimeLabel = () => {
+        const base = getBaseTime();
+        if (els.currentTime) els.currentTime.textContent = formatTime(base);
+    };
+
+    /* ====================================================================== */
+    /* Time picker                                                            */
+    /* ====================================================================== */
+
+    const buildTimePickerOptions = () => {
+        if (!els.hourSelect || !els.minuteSelect) return;
+
+        // Hours 1..12
+        els.hourSelect.innerHTML = '';
+        for (let h = 1; h <= 12; h++) {
+            const opt = document.createElement('option');
+            opt.value = String(h);
+            opt.textContent = String(h);
+            els.hourSelect.appendChild(opt);
+        }
+
+        // Minutes in steps of 5
+        els.minuteSelect.innerHTML = '';
+        for (let m = 0; m < 60; m += 5) {
+            const opt = document.createElement('option');
+            opt.value = String(m);
+            opt.textContent = pad2(m);
+            els.minuteSelect.appendChild(opt);
+        }
+
+        // Default values based on current base time
+        syncPickerFromBase();
+    };
+
     const pad2 = (n) => String(n).padStart(2, '0');
 
-    const formatTime = (date) =>
-        date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const syncPickerFromBase = () => {
+        const base = getBaseTime();
 
-    const formatHours = (hours) => {
-        const fixed = Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
-        return fixed.replace('.0', '');
+        let hours = base.getHours(); // 0..23
+        const minutes = base.getMinutes();
+
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+
+        // Redondea a múltiplos de 5
+        const roundedMinutes = Math.round(minutes / 5) * 5;
+        const safeMinutes = (roundedMinutes + 60) % 60;
+
+        els.hourSelect.value = String(hours);
+        els.minuteSelect.value = String(safeMinutes);
+        els.ampmSelect.value = ampm;
     };
 
-    const lerp = (a, b, t) => a + (b - a) * t;
+    const pickerToDate = () => {
+        const base = getBaseTime(); // toma fecha actual para no perder día
+        const hour12 = Number(els.hourSelect.value);
+        const minute = Number(els.minuteSelect.value);
+        const ampm = els.ampmSelect.value;
 
-    // Gradiente 9 pasos: rojo -> amarillo -> verde (HSL)
-    const glowColorForCycle = (cycleNum) => {
-        const t = (cycleNum - 1) / 8; // 0..1
-        if (t <= 0.5) {
-            const tt = t / 0.5; // 0..1
-            const h = lerp(0, 50, tt);
-            return `hsl(${h} 85% 55%)`;
+        let hour24 = hour12 % 12;
+        if (ampm === 'PM') hour24 += 12;
+
+        const d = new Date(base);
+        d.setHours(hour24, minute, 0, 0);
+        return d;
+    };
+
+    /* ====================================================================== */
+    /* UI bindings                                                            */
+    /* ====================================================================== */
+
+    const bindUI = () => {
+        if (els.delayInput) {
+            els.delayInput.addEventListener('input', () => {
+                saveDelay();
+                render();
+            });
         }
-        const tt = (t - 0.5) / 0.5; // 0..1
-        const h = lerp(50, 120, tt);
-        return `hsl(${h} 85% 50%)`;
-    };
 
-    const showToast = (message) => {
-        if (!toastEl) return;
-        toastEl.textContent = message;
-        toastEl.classList.remove('hidden');
-        // Reinicia animación
-        toastEl.classList.remove('show');
-        void toastEl.offsetWidth;
-        toastEl.classList.add('show');
+        if (els.openTimeModalBtn && els.timeModal) {
+            els.openTimeModalBtn.addEventListener('click', () => {
+                syncPickerFromBase();
+                openModal(els.timeModal);
+            });
+        }
 
-        clearTimeout(showToast._t);
-        showToast._t = setTimeout(() => {
-            toastEl.classList.remove('show');
-            setTimeout(() => toastEl.classList.add('hidden'), 220);
-        }, 1600);
-    };
+        if (els.useCurrentTimeBtn && els.timeModal) {
+            els.useCurrentTimeBtn.addEventListener('click', () => {
+                baseMode = 'auto';
+                manualBaseTime = null;
+                saveBaseTimeAuto();
+                closeModal(els.timeModal);
+                updateCurrentTimeLabel();
+                render();
+            });
+        }
 
-    const isAndroid = () => /Android/i.test(navigator.userAgent);
+        if (els.confirmTimeBtn && els.timeModal) {
+            els.confirmTimeBtn.addEventListener('click', () => {
+                baseMode = 'manual';
+                manualBaseTime = pickerToDate();
+                saveBaseTimeManual(manualBaseTime);
+                closeModal(els.timeModal);
+                updateCurrentTimeLabel();
+                render();
+            });
+        }
 
-    const buildIntentUrl = ({ action, extras = {} }) => {
-        // extras: { "i.android.intent.extra.alarm.HOUR": 7, ... }
-        const extraParts = Object.entries(extras).map(([k, v]) => {
-            if (typeof v === 'number') return `i.${k}=${v};`;
-            if (typeof v === 'boolean') return `B.${k}=${v};`;
-            return `S.${k}=${encodeURIComponent(String(v))};`;
-        }).join('');
+        if (els.closeInfoModalBtn && els.infoModal) {
+            els.closeInfoModalBtn.addEventListener('click', () => closeModal(els.infoModal));
+        }
 
-        // Sin package => menos probabilidad de Play Store
-        return `intent://alarm/#Intent;action=${action};category=android.intent.category.DEFAULT;${extraParts}end`;
-    };
-
-    const attemptOpenIntent = (url, timeoutMs = 900) => {
-        return new Promise((resolve) => {
-            let done = false;
-
-            const onVis = () => {
-                if (document.visibilityState === 'hidden') {
-                    done = true;
-                    cleanup();
-                    resolve(true);
+        // Delegación: copiar hora / abrir info / crear alarma
+        if (els.results) {
+            els.results.addEventListener('click', async (ev) => {
+                const timeEl = ev.target.closest('[data-copy-time]');
+                if (timeEl) {
+                    await copyToClipboard(timeEl.getAttribute('data-copy-time') || '');
+                    return;
                 }
-            };
 
-            const cleanup = () => {
-                document.removeEventListener('visibilitychange', onVis);
-            };
-
-            document.addEventListener('visibilitychange', onVis);
-
-            // IMPORTANTE: esto debe correr dentro del click del usuario
-            window.location.href = url;
-
-            setTimeout(() => {
-                cleanup();
-                if (!done) resolve(false);
-            }, timeoutMs);
-        });
-    };
-
-    const isSamsung = () => /Samsung|SM-|GT-|SCH-|SGH-|Galaxy/i.test(navigator.userAgent);
-
-    const openAndroidAlarm = async (hour24, minute, label, timeLabel) => {
-        if (!isAndroid()) {
-            showToast('Alarma: disponible solo en Android 📱');
-            return false;
-        }
-
-        const setAlarmUrl = buildIntentUrl({
-            action: 'android.intent.action.SET_ALARM',
-            extras: {
-                'android.intent.extra.alarm.HOUR': hour24,
-                'android.intent.extra.alarm.MINUTES': minute,
-                'android.intent.extra.alarm.MESSAGE': label,
-                // Puedes probar true, pero algunos relojes lo ignoran:
-                // 'android.intent.extra.alarm.SKIP_UI': true,
-            },
-        });
-
-        const showAlarmsUrl = buildIntentUrl({
-            action: 'android.intent.action.SHOW_ALARMS',
-        });
-
-        showToast('Abriendo reloj…');
-
-        const opened = await attemptOpenIntent(setAlarmUrl);
-        if (opened) return true;
-
-        // Fallback: al menos abrir la app de reloj
-        const openedFallback = await attemptOpenIntent(showAlarmsUrl);
-        if (openedFallback) {
-            if (timeLabel) copyToClipboard(timeLabel);
-            showToast('Reloj abierto. Hora copiada ✅');
-            return true;
-        }
-
-        // Último fallback: copiar hora
-        if (timeLabel) copyToClipboard(timeLabel);
-        showToast('No se pudo abrir el reloj. Hora copiada ✅');
-        return false;
-    };
-
-    const openModal = (modal) => {
-        modal.classList.remove('hidden');
-
-        // foco al primer control
-        const focusable = modal.querySelector('select, input, button');
-        if (focusable) focusable.focus();
-    };
-
-    const closeModal = (modal) => modal.classList.add('hidden');
-
-    // -----------------------------
-    // Stars
-    // -----------------------------
-    const createStars = (count) => {
-        const container = document.getElementById('stars-container');
-        if (!container) return;
-        container.innerHTML = '';
-        for (let i = 0; i < count; i++) {
-            const star = document.createElement('div');
-            star.className = 'star';
-            const size = Math.random() * 3 + 1;
-            star.style.width = `${size}px`;
-            star.style.height = `${size}px`;
-            star.style.top = `${Math.random() * 100}%`;
-            star.style.left = `${Math.random() * 100}%`;
-            star.style.animationDelay = `${Math.random() * 5}s`;
-            container.appendChild(star);
-        }
-    };
-
-    // -----------------------------
-    // Preferencias
-    // -----------------------------
-    const loadPreferences = () => {
-        const savedDelay = localStorage.getItem(PREFERENCE_DELAY_KEY);
-        if (savedDelay !== null) delayMinutesInput.value = savedDelay;
-
-        const savedBase = localStorage.getItem(PREFERENCE_BASE_TIME_KEY);
-        if (savedBase) {
-            try {
-                const parsed = JSON.parse(savedBase);
-                if (parsed?.mode === 'manual') {
-                    setBaseTimeFromParts(parsed.hour, parsed.minute, parsed.ampm);
-                    stopAutoUpdate();
-                } else {
-                    startAutoUpdate();
+                const infoBtn = ev.target.closest('[data-info]');
+                if (infoBtn) {
+                    const text = infoBtn.getAttribute('data-info') || '';
+                    if (els.infoModalText) els.infoModalText.textContent = text;
+                    openModal(els.infoModal);
+                    return;
                 }
-            } catch {
-                startAutoUpdate();
-            }
-        } else {
-            startAutoUpdate();
+
+                const alarmBtn = ev.target.closest('[data-alarm-hour]');
+                if (alarmBtn) {
+                    const h = Number(alarmBtn.getAttribute('data-alarm-hour'));
+                    const m = Number(alarmBtn.getAttribute('data-alarm-minute'));
+                    const label = alarmBtn.getAttribute('data-alarm-label') || 'SleepTimer';
+                    openAndroidAlarm({ hour24: h, minute: m, label });
+                }
+            });
         }
     };
 
-    const saveDelayPreference = () => {
-        localStorage.setItem(PREFERENCE_DELAY_KEY, delayMinutesInput.value);
-    };
+    /* ====================================================================== */
+    /* Rendering                                                               */
+    /* ====================================================================== */
 
-    const saveBaseTimePreference = (mode, hour, minute, ampm) => {
-        localStorage.setItem(PREFERENCE_BASE_TIME_KEY, JSON.stringify({ mode, hour, minute, ampm }));
-    };
+    const render = () => {
+        updateCurrentTimeLabel();
 
-    // -----------------------------
-    // Selectores hora (modal)
-    // -----------------------------
-    const populateTimeSelectors = () => {
-        hourSelect.innerHTML = '';
-        minuteSelect.innerHTML = '';
-        for (let i = 1; i <= 12; i++) {
-            hourSelect.innerHTML += `<option value="${i}">${pad2(i)}</option>`;
-        }
-        for (let i = 0; i < 60; i += 5) {
-            minuteSelect.innerHTML += `<option value="${i}">${pad2(i)}</option>`;
-        }
-    };
+        const base = getBaseTime();
+        const delayMinutes = clamp(Number(els.delayInput.value), 0, 60);
+        const sleepStart = new Date(base.getTime() + delayMinutes * 60 * 1000);
 
-    const setBaseTimeFromParts = (hour12, minute, ampm) => {
-        let hour = Number(hour12);
-        const min = Number(minute);
-        if (ampm === 'PM' && hour < 12) hour += 12;
-        if (ampm === 'AM' && hour === 12) hour = 0;
-        baseTime = new Date();
-        baseTime.setHours(hour, min, 0, 0);
-    };
-
-    // -----------------------------
-    // Cálculos
-    // -----------------------------
-    const calculateWakeUpTimes = (fallAsleepTime) => {
-        return CYCLES.map((cycleData) => {
-            const wakeUpTime = new Date(fallAsleepTime.getTime() + cycleData.durationMinutes * 60 * 1000);
+        // Construye resultados
+        const results = CYCLES.map((cycle) => {
+            const wake = new Date(sleepStart.getTime() + cycle.totalMinutes * 60 * 1000);
             return {
-                cycle: cycleData.cycles,
-                timeLabel: formatTime(wakeUpTime),
-                hour24: wakeUpTime.getHours(),
-                minute: wakeUpTime.getMinutes(),
-                sleepHours: cycleData.durationHours,
-                cycleTitle: cycleData.title,
-                cycleDescription: cycleData.description
+                cycle,
+                wake,
+                wakeLabel: formatTime(wake),
+                hour24: wake.getHours(),
+                minute: wake.getMinutes(),
+                infoText:
+                    `${cycle.title} · ${cycle.cycles} ciclo(s)\n` +
+                    `Sueño estimado: ${formatHours(cycle.sleepHours)}\n` +
+                    `Te duermes: ${formatTime(sleepStart)} (delay ${delayMinutes} min)\n` +
+                    `Despiertas: ${formatTime(wake)}`
             };
         });
+
+        paintResults(results, delayMinutes, sleepStart);
     };
 
-    // -----------------------------
-    // Render
-    // -----------------------------
-    const renderResults = (container, results, delayMinutes) => {
-        container.innerHTML = '';
+    const paintResults = (items, delayMinutes, sleepStart) => {
+        if (!els.results) return;
 
-        results.forEach((result, index) => {
+        els.results.innerHTML = '';
+
+        items.forEach((item, idx) => {
+            const glow = glowColorForCycle(item.cycle.cycles);
+
             const card = document.createElement('div');
             card.className = 'result-card';
-            card.style.animationDelay = `${index * 70}ms`;
-            card.style.setProperty('--glow-color', glowColorForCycle(result.cycle));
+            card.style.setProperty('--glow-color', glow);
+            card.style.animationDelay = `${idx * 55}ms`;
+
+            const badges = [];
+            badges.push(`<span class="badge">${formatHours(item.cycle.sleepHours)}</span>`);
+            badges.push(`<span class="badge">${item.cycle.cycles} ciclo(s)</span>`);
+            badges.push(`<span class="badge">+${delayMinutes} min</span>`);
+            if (item.cycle.recommended) badges.push(`<span class="badge recommended">Recomendado</span>`);
 
             card.innerHTML = `
         <div class="card-content">
-          <div class="card-left">
-            <span class="result-time" title="Toca para copiar" data-copy="${result.timeLabel}">${result.timeLabel}</span>
-            <span class="result-meta">
-              ${formatHours(result.sleepHours)}h · ${result.cycle} ciclo${result.cycle > 1 ? 's' : ''} · +${delayMinutes} min
-            </span>
+          <div class="card-main">
+            <div class="time-row">
+              <span class="result-time" data-copy-time="${escapeHtml(item.wakeLabel)}" title="Toca para copiar">
+                ${escapeHtml(item.wakeLabel)}
+              </span>
+              <div class="badges">${badges.join('')}</div>
+            </div>
+            <div class="meta-row">
+              <span>${escapeHtml(item.cycle.title)}</span>
+              <span>·</span>
+              <span>Despertar entre ciclos</span>
+            </div>
           </div>
 
-          <div class="card-right">
-            <div>
-              <p class="result-label">${result.cycleTitle}</p>
-              <p class="result-sub">Despertar entre ciclos</p>
-            </div>
+          <div class="card-actions">
+            <button class="icon-button" type="button" aria-label="Info" data-info="${escapeHtml(item.infoText)}">
+              ${infoIcon()}
+            </button>
 
-            <div class="card-actions">
-              <button class="icon-button info-button" data-cycle="${result.cycle}" aria-label="Más información del ciclo">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-              </button>
-
-              <button class="icon-button alarm-button"
-                      data-hour24="${result.hour24}" 
-                      data-minute="${result.minute}"
-                      data-label="SleepTimer · ${result.cycle} ciclo${result.cycle > 1 ? 's' : ''}"
-                      data-time="${result.timeLabel}"
-                      aria-label="Crear alarma en el reloj">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="13" r="8"></circle>
-                  <path d="M5 3 2 6"></path>
-                  <path d="m22 6-3-3"></path>
-                  <path d="M12 9v5l3 2"></path>
-                </svg>
-              </button>
-            </div>
+            <button
+              class="icon-button"
+              type="button"
+              aria-label="Crear alarma"
+              data-alarm-hour="${item.hour24}"
+              data-alarm-minute="${item.minute}"
+              data-alarm-label="SleepTimer ${escapeHtml(item.wakeLabel)}"
+              title="Crear alarma"
+            >
+              ${alarmIcon()}
+            </button>
           </div>
         </div>
       `;
 
-            container.appendChild(card);
+            els.results.appendChild(card);
         });
     };
 
-    const updateSubtitle = () => {
-        const timeLabel = formatTime(baseTime);
-        if (currentTimeEl) currentTimeEl.textContent = timeLabel;
+    /* ====================================================================== */
+    /* Icons + helpers                                                        */
+    /* ====================================================================== */
 
-        if (timerInterval) {
-            subtitleEl.innerHTML = `Hora base: <span class="font-bold text-white">${timeLabel}</span> (actual)`;
-        } else {
-            subtitleEl.innerHTML = `Hora base: <span class="font-bold text-white">${timeLabel}</span>`;
-        }
-    };
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
 
-    const updateGeneralInfo = (delayMinutes) => {
-        if (!generalInfoEl) return;
-        generalInfoEl.textContent =
-            `Cada tarjeta es un ciclo (≈ 90 min). Aquí añadimos ${delayMinutes} min para conciliar el sueño. ` +
-            `Elige la hora que mejor se ajuste a tu noche.`;
-    };
+    const escapeHtml = (str) => String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
 
-    const updateApp = () => {
-        const delayMinutes = parseInt(delayMinutesInput.value, 10) || 0;
+    const infoIcon = () => `
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M12 10.7v6.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M12 7.6h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+  `;
 
-        const fallAsleepTime = new Date(baseTime.getTime() + delayMinutes * 60 * 1000);
-        const results = calculateWakeUpTimes(fallAsleepTime);
-
-        renderResults(resultsContainer, results, delayMinutes);
-        updateSubtitle();
-        updateGeneralInfo(delayMinutes);
-    };
-
-    // -----------------------------
-    // Auto update
-    // -----------------------------
-    const startAutoUpdate = () => {
-        if (timerInterval) clearInterval(timerInterval);
-
-        baseTime = new Date();
-        updateApp();
-
-        timerInterval = setInterval(() => {
-            baseTime = new Date();
-            updateApp();
-        }, 60000);
-
-        // Guarda modo
-        const now = new Date();
-        let hr = now.getHours();
-        const ampm = hr >= 12 ? 'PM' : 'AM';
-        hr = hr % 12 || 12;
-        saveBaseTimePreference('auto', hr, Math.round(now.getMinutes() / 5) * 5 % 60, ampm);
-    };
-
-    const stopAutoUpdate = () => {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    };
-
-    // -----------------------------
-    // Handlers
-    // -----------------------------
-    const handleInfoClick = (cycle) => {
-        const cycleData = CYCLES[cycle - 1];
-        if (!cycleData) return;
-        infoModalTitle.textContent = cycleData.title;
-        infoModalText.textContent = cycleData.description;
-        openModal(infoModal);
-    };
-
-    const handleAlarmClick = (hour24, minute, label, timeLabel) => {
-        openAndroidAlarm(hour24, minute, label, timeLabel);
-    };
-
-    const copyToClipboard = async (text) => {
-        try {
-            if (navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(text);
-                showToast('Hora copiada ✅');
-            } else {
-                // fallback
-                window.prompt('Copia la hora:', text);
-            }
-        } catch {
-            window.prompt('Copia la hora:', text);
-        }
-    };
-
-    const openTimeModal = () => {
-        // precarga la hora actual aproximada a 5 min
-        const now = new Date();
-        let hours = now.getHours();
-        let minutes = Math.round(now.getMinutes() / 5) * 5;
-        if (minutes === 60) {
-            minutes = 0;
-            hours = (hours + 1) % 24;
-        }
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        let hr12 = hours % 12;
-        hr12 = hr12 ? hr12 : 12;
-
-        hourSelect.value = String(hr12);
-        minuteSelect.value = String(minutes);
-        ampmSelect.value = ampm;
-
-        openModal(timePickerModal);
-    };
-
-    const handleConfirmTime = () => {
-        const hour12 = parseInt(hourSelect.value, 10);
-        const minute = parseInt(minuteSelect.value, 10);
-        const ampm = ampmSelect.value;
-
-        setBaseTimeFromParts(hour12, minute, ampm);
-        stopAutoUpdate();
-        saveBaseTimePreference('manual', hour12, minute, ampm);
-
-        updateApp();
-        closeModal(timePickerModal);
-        showToast('Hora base actualizada');
-    };
-
-    const handleUseCurrentTime = () => {
-        startAutoUpdate();
-        closeModal(timePickerModal);
-        showToast('Usando hora actual');
-    };
-
-    // -----------------------------
-    // Listeners
-    // -----------------------------
-    const setupEventListeners = () => {
-        openModalBtn.addEventListener('click', openTimeModal);
-
-        timePickerModal.addEventListener('click', (e) => {
-            if (e.target === timePickerModal) closeModal(timePickerModal);
-        });
-
-        confirmTimeBtn.addEventListener('click', handleConfirmTime);
-        useCurrentTimeBtn.addEventListener('click', handleUseCurrentTime);
-
-        delayMinutesInput.addEventListener('input', () => {
-            updateApp();
-            saveDelayPreference();
-        });
-
-        // Delegación de eventos para resultados: info, alarm, copy
-        resultsContainer.addEventListener('click', (e) => {
-            const infoBtn = e.target.closest('.info-button');
-            if (infoBtn) {
-                const cycle = parseInt(infoBtn.dataset.cycle, 10);
-                handleInfoClick(cycle);
-                return;
-            }
-
-            const alarmBtn = e.target.closest('.alarm-button');
-            if (alarmBtn) {
-                const hour24 = parseInt(alarmBtn.dataset.hour24, 10);
-                const minute = parseInt(alarmBtn.dataset.minute, 10);
-                const label = alarmBtn.dataset.label || 'SleepTimer';
-                const timeLabel = alarmBtn.dataset.time || '';
-                handleAlarmClick(hour24, minute, label, timeLabel);
-                return;
-            }
-
-            const copyEl = e.target.closest('[data-copy]');
-            if (copyEl) {
-                const value = copyEl.getAttribute('data-copy');
-                if (value) copyToClipboard(value);
-            }
-        });
-
-        closeInfoModalBtn.addEventListener('click', () => closeModal(infoModal));
-        infoModal.addEventListener('click', (e) => e.target === infoModal && closeModal(infoModal));
-
-        // Esc para cerrar modales
-        document.addEventListener('keydown', (e) => {
-            if (e.key !== 'Escape') return;
-            if (!timePickerModal.classList.contains('hidden')) closeModal(timePickerModal);
-            if (!infoModal.classList.contains('hidden')) closeModal(infoModal);
-        });
-
-        // Enter dentro del modal confirma
-        timePickerModal.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') handleConfirmTime();
-        });
-    };
-
-    // -----------------------------
-    // Init
-    // -----------------------------
-    const init = () => {
-        createStars(110);
-        populateTimeSelectors();
-        setupEventListeners();
-        loadPreferences();
-        updateApp();
-    };
-
-    init();
-});
+    const alarmIcon = () => `
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 22c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8Z" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M12 10v4l2.6 1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4.5 6.3 2.7 4.5M19.5 6.3l1.8-1.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+  `;
+})();

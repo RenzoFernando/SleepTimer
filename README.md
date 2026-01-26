@@ -39,8 +39,8 @@ SleepTimer/
 │
 ├── extras/
 │   ├── style.css   (Estilos compartidos)
-│   ├── despertar.js   (Lógica para 'Hora de Despertar')
-│   └── dormir.js   (Lógica para 'Hora de Dormir')
+│   ├── common.js   (Lógica para 'Hora de Despertar')
+│   └── despertar.js   (Lógica para 'Hora de Dormir')
 │
 ├── index.html      (Página 'Hora de Despertar')
 └── wakeup.html     (Página 'Hora de Dormir')

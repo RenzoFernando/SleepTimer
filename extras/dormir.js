@@ -1,339 +1,324 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // -----------------------------
-    // Preferencias
-    // -----------------------------
-    const TIME_PREFERENCE_KEY = 'sleepTimer-wakeUpTime';
-    const DELAY_PREFERENCE_KEY = 'sleepTimer-wakeUpDelay';
+/* ==========================================================================
+   SleepTimer · dormir.js (para /extras/dormir.html)
+   Calcula a qué hora dormir restando ciclos al objetivo de despertar.
+   ========================================================================== */
 
-    // -----------------------------
-    // DOM
-    // -----------------------------
-    const dateInput = document.getElementById('wake-up-date');
-    const hourSelect = document.getElementById('hour-select');
-    const minuteSelect = document.getElementById('minute-select');
-    const ampmSelect = document.getElementById('ampm-select');
-    const delayMinutesInput = document.getElementById('delay-minutes-input');
-    const resultsContainer = document.getElementById('results-container');
-    const generalInfoEl = document.getElementById('general-info');
+(() => {
+    'use strict';
 
-    const toastEl = document.getElementById('toast');
+    const {
+        CYCLES,
+        formatTime,
+        formatHours,
+        glowColorForCycle,
+        createStars,
+        copyToClipboard,
+        openModal,
+        closeModal,
+        applyCurrentYear,
+        setupWakeLockButton,
+        openAndroidAlarm,
+        handleAlarmFallback
+    } = window.SleepTimer || {};
 
-    const infoModal = document.getElementById('info-modal');
-    const infoModalTitle = document.getElementById('info-modal-title');
-    const infoModalText = document.getElementById('info-modal-text');
-    const closeInfoModalBtn = document.getElementById('close-info-modal-btn');
+    if (!CYCLES) return;
 
-    // -----------------------------
-    // Datos ciclos (mismo set que en la otra página para consistencia)
-    // -----------------------------
-    const CYCLES = [
-        { title: 'Siesta rápida', description: 'Un ciclo (1.5h) es ideal para una siesta de poder: mejora estado de alerta y rendimiento cuando tienes poco tiempo.' },
-        { title: 'Descanso corto', description: 'Dos ciclos (3h) ayudan a recuperar energía y memoria. Buena opción para una noche corta.' },
-        { title: 'Sueño reparador', description: 'Tres ciclos (4.5h) incluyen fases profundas y REM. Es el mínimo razonable para no cortar REM.' },
-        { title: 'Descanso aceptable', description: 'Cuatro ciclos (6h) proporcionan recuperación física y mental considerable.' },
-        { title: 'Buen descanso', description: 'Cinco ciclos (7.5h) se acercan a la recomendación típica para adultos. Despertarás más fresco.' },
-        { title: 'Descanso ideal', description: 'Seis ciclos (9h) es muy completo: recuperación profunda y un despertar normalmente más suave.' },
-        { title: 'Sueño profundo', description: 'Siete ciclos (10.5h) pueden ayudar si vienes con deuda de sueño, entrenamiento intenso o recuperación.' },
-        { title: 'Totalmente recuperado', description: 'Ocho ciclos (12h) es más de lo común, pero útil en periodos de descanso fuerte o convalecencia.' },
-        { title: 'Máxima energía', description: 'Nueve ciclos (13.5h) es mucho para la mayoría, pero puede servir en recuperación muy intensa.' }
-    ].map((c, idx) => ({
-        ...c,
-        cycles: idx + 1,
-        durationMinutes: (idx + 1) * 90,
-        durationHours: ((idx + 1) * 90) / 60
-    }));
+    const STORAGE = {
+        DATE: 'sleepTimer.wakeDate.v3',             // YYYY-MM-DD
+        TIME_HOUR: 'sleepTimer.wakeHour.v3',        // 1..12
+        TIME_MINUTE: 'sleepTimer.wakeMinute.v3',    // 0..59
+        TIME_AMPM: 'sleepTimer.wakeAmPm.v3',        // AM|PM
+        DELAY_MINUTES: 'sleepTimer.sleepDelay.v3'   // number
+    };
 
-    // -----------------------------
-    // Utils
-    // -----------------------------
+    const els = {
+        date: document.getElementById('wake-up-date'),
+        hour: document.getElementById('hour-select'),
+        minute: document.getElementById('minute-select'),
+        ampm: document.getElementById('ampm-select'),
+        delay: document.getElementById('delay-minutes-input'),
+
+        createAlarmBtn: document.getElementById('create-alarm-btn'),
+        alarmPreview: document.getElementById('alarm-preview'),
+
+        results: document.getElementById('results-container'),
+
+        infoModal: document.getElementById('info-modal'),
+        infoModalText: document.getElementById('info-modal-text'),
+        closeInfoModalBtn: document.getElementById('close-info-modal-btn')
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        createStars();
+        applyCurrentYear();
+        setupWakeLockButton();
+        handleAlarmFallback();
+
+        buildSelectors();
+        hydrate();
+        bindUI();
+        updatePreview();
+        render();
+    });
+
+    /* ====================================================================== */
+    /* Selectors                                                               */
+    /* ====================================================================== */
+
     const pad2 = (n) => String(n).padStart(2, '0');
 
-    const formatTime = (date) =>
-        date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-    const formatHours = (hours) => {
-        const fixed = Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
-        return fixed.replace('.0', '');
-    };
-
-    const lerp = (a, b, t) => a + (b - a) * t;
-
-    const glowColorForCycle = (cycleNum) => {
-        const t = (cycleNum - 1) / 8;
-        if (t <= 0.5) {
-            const tt = t / 0.5;
-            const h = lerp(0, 50, tt);
-            return `hsl(${h} 85% 55%)`;
+    const buildSelectors = () => {
+        // Hora 1..12
+        els.hour.innerHTML = '';
+        for (let h = 1; h <= 12; h++) {
+            const opt = document.createElement('option');
+            opt.value = String(h);
+            opt.textContent = String(h);
+            els.hour.appendChild(opt);
         }
-        const tt = (t - 0.5) / 0.5;
-        const h = lerp(50, 120, tt);
-        return `hsl(${h} 85% 50%)`;
-    };
 
-    const showToast = (message) => {
-        if (!toastEl) return;
-        toastEl.textContent = message;
-        toastEl.classList.remove('hidden');
-        toastEl.classList.remove('show');
-        void toastEl.offsetWidth;
-        toastEl.classList.add('show');
-
-        clearTimeout(showToast._t);
-        showToast._t = setTimeout(() => {
-            toastEl.classList.remove('show');
-            setTimeout(() => toastEl.classList.add('hidden'), 220);
-        }, 1600);
-    };
-
-    const openModal = (modal) => {
-        modal.classList.remove('hidden');
-        const focusable = modal.querySelector('button');
-        if (focusable) focusable.focus();
-    };
-
-    const closeModal = (modal) => modal.classList.add('hidden');
-
-    // -----------------------------
-    // Stars
-    // -----------------------------
-    const createStars = (count) => {
-        const container = document.getElementById('stars-container');
-        if (!container) return;
-        container.innerHTML = '';
-        for (let i = 0; i < count; i++) {
-            const star = document.createElement('div');
-            star.className = 'star';
-            const size = Math.random() * 3 + 1;
-            star.style.width = `${size}px`;
-            star.style.height = `${size}px`;
-            star.style.top = `${Math.random() * 100}%`;
-            star.style.left = `${Math.random() * 100}%`;
-            star.style.animationDelay = `${Math.random() * 5}s`;
-            container.appendChild(star);
+        // Minutos 0..59 en pasos de 5
+        els.minute.innerHTML = '';
+        for (let m = 0; m < 60; m += 5) {
+            const opt = document.createElement('option');
+            opt.value = String(m);
+            opt.textContent = pad2(m);
+            els.minute.appendChild(opt);
         }
     };
 
-    // -----------------------------
-    // Preferencias
-    // -----------------------------
-    const loadPreferences = () => {
-        const savedTime = localStorage.getItem(TIME_PREFERENCE_KEY);
-        if (savedTime) {
-            try {
-                const { hour, minute, ampm } = JSON.parse(savedTime);
-                hourSelect.value = hour;
-                minuteSelect.value = minute;
-                ampmSelect.value = ampm;
-            } catch { /* ignore */ }
+    /* ====================================================================== */
+    /* Storage / defaults                                                      */
+    /* ====================================================================== */
+
+    const todayISO = () => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        const y = d.getFullYear();
+        const m = pad2(d.getMonth() + 1);
+        const day = pad2(d.getDate());
+        return `${y}-${m}-${day}`;
+    };
+
+    const tomorrowISO = () => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        d.setHours(0, 0, 0, 0);
+        const y = d.getFullYear();
+        const m = pad2(d.getMonth() + 1);
+        const day = pad2(d.getDate());
+        return `${y}-${m}-${day}`;
+    };
+
+    const hydrate = () => {
+        // Fecha
+        const min = todayISO();
+        if (els.date) els.date.min = min;
+
+        const savedDate = localStorage.getItem(STORAGE.DATE);
+        els.date.value = savedDate || tomorrowISO();
+
+        // Hora
+        els.hour.value = localStorage.getItem(STORAGE.TIME_HOUR) || '7';
+        els.minute.value = localStorage.getItem(STORAGE.TIME_MINUTE) || '0';
+        els.ampm.value = localStorage.getItem(STORAGE.TIME_AMPM) || 'AM';
+
+        // Delay
+        const savedDelay = Number(localStorage.getItem(STORAGE.DELAY_MINUTES));
+        els.delay.value = Number.isFinite(savedDelay) ? String(clamp(savedDelay, 0, 60)) : '5';
+    };
+
+    const persist = () => {
+        localStorage.setItem(STORAGE.DATE, els.date.value);
+        localStorage.setItem(STORAGE.TIME_HOUR, els.hour.value);
+        localStorage.setItem(STORAGE.TIME_MINUTE, els.minute.value);
+        localStorage.setItem(STORAGE.TIME_AMPM, els.ampm.value);
+        localStorage.setItem(STORAGE.DELAY_MINUTES, String(clamp(Number(els.delay.value), 0, 60)));
+    };
+
+    /* ====================================================================== */
+    /* UI bindings                                                            */
+    /* ====================================================================== */
+
+    const bindUI = () => {
+        ['change', 'input'].forEach(evt => {
+            els.date.addEventListener(evt, () => { persist(); updatePreview(); render(); });
+            els.hour.addEventListener(evt, () => { persist(); updatePreview(); render(); });
+            els.minute.addEventListener(evt, () => { persist(); updatePreview(); render(); });
+            els.ampm.addEventListener(evt, () => { persist(); updatePreview(); render(); });
+            els.delay.addEventListener(evt, () => { persist(); updatePreview(); render(); });
+        });
+
+        if (els.createAlarmBtn) {
+            els.createAlarmBtn.addEventListener('click', () => {
+                const { hour24, minute } = getWakeTimeParts();
+                openAndroidAlarm({
+                    hour24,
+                    minute,
+                    label: `SleepTimer ${formatWakeTimeLabel()}`
+                });
+            });
         }
 
-        const savedDelay = localStorage.getItem(DELAY_PREFERENCE_KEY);
-        if (savedDelay !== null) delayMinutesInput.value = savedDelay;
-    };
-
-    const savePreferences = () => {
-        const time = {
-            hour: hourSelect.value,
-            minute: minuteSelect.value,
-            ampm: ampmSelect.value
-        };
-        localStorage.setItem(TIME_PREFERENCE_KEY, JSON.stringify(time));
-        localStorage.setItem(DELAY_PREFERENCE_KEY, delayMinutesInput.value);
-    };
-
-    // -----------------------------
-    // Selectores
-    // -----------------------------
-    const populateTimeSelectors = () => {
-        hourSelect.innerHTML = '';
-        minuteSelect.innerHTML = '';
-        for (let i = 1; i <= 12; i++) {
-            hourSelect.innerHTML += `<option value="${i}">${pad2(i)}</option>`;
+        if (els.closeInfoModalBtn && els.infoModal) {
+            els.closeInfoModalBtn.addEventListener('click', () => closeModal(els.infoModal));
         }
-        for (let i = 0; i < 60; i += 5) {
-            minuteSelect.innerHTML += `<option value="${i}">${pad2(i)}</option>`;
+
+        // Delegación: copiar hora de dormir / abrir info
+        if (els.results) {
+            els.results.addEventListener('click', async (ev) => {
+                const timeEl = ev.target.closest('[data-copy-time]');
+                if (timeEl) {
+                    await copyToClipboard(timeEl.getAttribute('data-copy-time') || '');
+                    return;
+                }
+
+                const infoBtn = ev.target.closest('[data-info]');
+                if (infoBtn) {
+                    const text = infoBtn.getAttribute('data-info') || '';
+                    if (els.infoModalText) els.infoModalText.textContent = text;
+                    openModal(els.infoModal);
+                }
+            });
         }
     };
 
-    const setDefaultDateTime = () => {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
+    /* ====================================================================== */
+    /* Compute                                                                  */
+    /* ====================================================================== */
 
-        const yyyy = tomorrow.getFullYear();
-        const mm = pad2(tomorrow.getMonth() + 1);
-        const dd = pad2(tomorrow.getDate());
-        dateInput.value = `${yyyy}-${mm}-${dd}`;
+    const getWakeDateTime = () => {
+        const [y, mo, d] = els.date.value.split('-').map(Number);
+        const hour12 = Number(els.hour.value);
+        const minute = Number(els.minute.value);
+        const ampm = els.ampm.value;
 
-        hourSelect.value = '7';
-        minuteSelect.value = '0';
-        ampmSelect.value = 'AM';
+        let hour24 = hour12 % 12;
+        if (ampm === 'PM') hour24 += 12;
+
+        const dt = new Date(y, (mo - 1), d, hour24, minute, 0, 0);
+        return dt;
     };
 
-    // -----------------------------
-    // Cálculo
-    // -----------------------------
-    const getWakeUpDateTime = () => {
-        const [yyyy, mm, dd] = dateInput.value.split('-').map(Number);
+    const getWakeTimeParts = () => {
+        const hour12 = Number(els.hour.value);
+        const minute = Number(els.minute.value);
+        const ampm = els.ampm.value;
 
-        let hour = parseInt(hourSelect.value, 10);
-        const minute = parseInt(minuteSelect.value, 10);
-        const ampm = ampmSelect.value;
+        let hour24 = hour12 % 12;
+        if (ampm === 'PM') hour24 += 12;
 
-        if (ampm === 'PM' && hour < 12) hour += 12;
-        if (ampm === 'AM' && hour === 12) hour = 0;
-
-        return new Date(yyyy, mm - 1, dd, hour, minute, 0, 0);
+        return { hour24, minute };
     };
 
-    const calculateBedTimes = (wakeUpTime, delayMinutes) => {
-        return CYCLES.map((cycleData) => {
-            const bedTime = new Date(
-                wakeUpTime.getTime() -
-                (cycleData.durationMinutes * 60 * 1000) -
-                (delayMinutes * 60 * 1000)
-            );
+    const formatWakeTimeLabel = () => {
+        // Formato tipo 7:00 AM (sin fecha)
+        const dt = getWakeDateTime();
+        return formatTime(dt);
+    };
+
+    const updatePreview = () => {
+        if (!els.alarmPreview) return;
+
+        const dt = getWakeDateTime();
+        const delay = clamp(Number(els.delay.value), 0, 60);
+
+        const parts = dt.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        els.alarmPreview.textContent = `Objetivo: ${parts} · ${formatTime(dt)} · delay ${delay} min`;
+    };
+
+    /* ====================================================================== */
+    /* Rendering                                                               */
+    /* ====================================================================== */
+
+    const render = () => {
+        const wake = getWakeDateTime();
+        const delayMinutes = clamp(Number(els.delay.value), 0, 60);
+
+        // Hora real de inicio de sueño (restando delay) para el cálculo inverso:
+        // si te tardas X min en dormir, debes acostarte X min antes.
+        // Aquí restamos (ciclo + delay).
+        const items = CYCLES.map((cycle) => {
+            const bed = new Date(wake.getTime() - (cycle.totalMinutes + delayMinutes) * 60 * 1000);
             return {
-                cycle: cycleData.cycles,
-                timeLabel: formatTime(bedTime),
-                sleepHours: cycleData.durationHours,
-                cycleTitle: cycleData.title,
-                cycleDescription: cycleData.description
+                cycle,
+                bed,
+                bedLabel: formatTime(bed),
+                infoText:
+                    `${cycle.title} · ${cycle.cycles} ciclo(s)\n` +
+                    `Sueño estimado: ${formatHours(cycle.sleepHours)}\n` +
+                    `Objetivo de despertar: ${formatTime(wake)}\n` +
+                    `Te acuestas: ${formatTime(bed)} (incluye delay ${delayMinutes} min)`
             };
         });
+
+        paintResults(items, delayMinutes);
     };
 
-    // -----------------------------
-    // Render
-    // -----------------------------
-    const renderResults = (container, results, delayMinutes) => {
-        container.innerHTML = '';
-        results.forEach((result, index) => {
+    const paintResults = (items, delayMinutes) => {
+        if (!els.results) return;
+        els.results.innerHTML = '';
+
+        items.forEach((item, idx) => {
+            const glow = glowColorForCycle(item.cycle.cycles);
+
             const card = document.createElement('div');
             card.className = 'result-card';
-            card.style.animationDelay = `${index * 70}ms`;
-            card.style.setProperty('--glow-color', glowColorForCycle(result.cycle));
+            card.style.setProperty('--glow-color', glow);
+            card.style.animationDelay = `${idx * 55}ms`;
+
+            const badges = [];
+            badges.push(`<span class="badge">${formatHours(item.cycle.sleepHours)}</span>`);
+            badges.push(`<span class="badge">${item.cycle.cycles} ciclo(s)</span>`);
+            badges.push(`<span class="badge">+${delayMinutes} min</span>`);
+            if (item.cycle.recommended) badges.push(`<span class="badge recommended">Recomendado</span>`);
 
             card.innerHTML = `
         <div class="card-content">
-          <div class="card-left">
-            <span class="result-time" title="Toca para copiar" data-copy="${result.timeLabel}">${result.timeLabel}</span>
-            <span class="result-meta">
-              ${formatHours(result.sleepHours)}h · ${result.cycle} ciclo${result.cycle > 1 ? 's' : ''} · +${delayMinutes} min
-            </span>
+          <div class="card-main">
+            <div class="time-row">
+              <span class="result-time" data-copy-time="${escapeHtml(item.bedLabel)}" title="Toca para copiar">
+                ${escapeHtml(item.bedLabel)}
+              </span>
+              <div class="badges">${badges.join('')}</div>
+            </div>
+            <div class="meta-row">
+              <span>${escapeHtml(item.cycle.title)}</span>
+              <span>·</span>
+              <span>Hora para acostarte</span>
+            </div>
           </div>
 
-          <div class="card-right">
-            <div>
-              <p class="result-label">${result.cycleTitle}</p>
-              <p class="result-sub">Hora para acostarte</p>
-            </div>
-
-            <div class="card-actions">
-              <button class="icon-button info-button" data-cycle="${result.cycle}" aria-label="Más información del ciclo">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-              </button>
-            </div>
+          <div class="card-actions">
+            <button class="icon-button" type="button" aria-label="Info" data-info="${escapeHtml(item.infoText)}">
+              ${infoIcon()}
+            </button>
           </div>
         </div>
       `;
 
-            container.appendChild(card);
+            els.results.appendChild(card);
         });
     };
 
-    const updateGeneralInfo = (delayMinutes) => {
-        if (!generalInfoEl) return;
-        generalInfoEl.textContent =
-            `Restamos ciclos de 90 min desde tu hora de despertar. Aquí añadimos ${delayMinutes} min para conciliar el sueño. ` +
-            `Elige la hora que te permita completar ciclos completos.`;
-    };
+    /* ====================================================================== */
+    /* Helpers                                                                 */
+    /* ====================================================================== */
 
-    const updateApp = () => {
-        const delayMinutes = parseInt(delayMinutesInput.value, 10) || 0;
-        const wakeUpTime = getWakeUpDateTime();
-        const bedTimeResults = calculateBedTimes(wakeUpTime, delayMinutes);
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
 
-        renderResults(resultsContainer, bedTimeResults, delayMinutes);
-        updateGeneralInfo(delayMinutes);
-    };
+    const escapeHtml = (str) => String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
 
-    // -----------------------------
-    // Copy
-    // -----------------------------
-    const copyToClipboard = async (text) => {
-        try {
-            if (navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(text);
-                showToast('Hora copiada ✅');
-            } else {
-                window.prompt('Copia la hora:', text);
-            }
-        } catch {
-            window.prompt('Copia la hora:', text);
-        }
-    };
-
-    // -----------------------------
-    // Info modal
-    // -----------------------------
-    const handleInfoClick = (cycle) => {
-        const cycleData = CYCLES[cycle - 1];
-        if (!cycleData) return;
-        infoModalTitle.textContent = cycleData.title;
-        infoModalText.textContent = cycleData.description;
-        openModal(infoModal);
-    };
-
-    // -----------------------------
-    // Listeners
-    // -----------------------------
-    const setupEventListeners = () => {
-        [dateInput, hourSelect, minuteSelect, ampmSelect, delayMinutesInput].forEach((el) => {
-            el.addEventListener('change', () => {
-                updateApp();
-                savePreferences();
-            });
-        });
-
-        resultsContainer.addEventListener('click', (e) => {
-            const infoBtn = e.target.closest('.info-button');
-            if (infoBtn) {
-                const cycle = parseInt(infoBtn.dataset.cycle, 10);
-                handleInfoClick(cycle);
-                return;
-            }
-
-            const copyEl = e.target.closest('[data-copy]');
-            if (copyEl) {
-                const value = copyEl.getAttribute('data-copy');
-                if (value) copyToClipboard(value);
-            }
-        });
-
-        if (closeInfoModalBtn) closeInfoModalBtn.addEventListener('click', () => closeModal(infoModal));
-        if (infoModal) infoModal.addEventListener('click', (e) => e.target === infoModal && closeModal(infoModal));
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && infoModal && !infoModal.classList.contains('hidden')) closeModal(infoModal);
-        });
-    };
-
-    // -----------------------------
-    // Init
-    // -----------------------------
-    const init = () => {
-        createStars(110);
-        populateTimeSelectors();
-        setDefaultDateTime();
-        loadPreferences();
-        setupEventListeners();
-        updateApp();
-    };
-
-    init();
-});
+    const infoIcon = () => `
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M12 10.7v6.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M12 7.6h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+  `;
+})();
