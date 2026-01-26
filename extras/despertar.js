@@ -351,18 +351,6 @@
             <button class="icon-button" type="button" aria-label="Info" data-info="${escapeHtml(item.infoText)}">
               ${infoIcon()}
             </button>
-
-            <button
-              class="icon-button"
-              type="button"
-              aria-label="Crear alarma"
-              data-alarm-hour="${item.hour24}"
-              data-alarm-minute="${item.minute}"
-              data-alarm-label="SleepTimer ${escapeHtml(item.wakeLabel)}"
-              title="Crear alarma"
-            >
-              ${alarmIcon()}
-            </button>
           </div>
         </div>
       `;
