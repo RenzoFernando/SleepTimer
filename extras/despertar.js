@@ -100,28 +100,87 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const isAndroid = () => /Android/i.test(navigator.userAgent);
+
+    const buildIntentUrl = ({ action, extras = {} }) => {
+        // extras: { "i.android.intent.extra.alarm.HOUR": 7, ... }
+        const extraParts = Object.entries(extras).map(([k, v]) => {
+            if (typeof v === 'number') return `i.${k}=${v};`;
+            if (typeof v === 'boolean') return `B.${k}=${v};`;
+            return `S.${k}=${encodeURIComponent(String(v))};`;
+        }).join('');
+
+        // Sin package => menos probabilidad de Play Store
+        return `intent://alarm/#Intent;action=${action};category=android.intent.category.DEFAULT;${extraParts}end`;
+    };
+
+    const attemptOpenIntent = (url, timeoutMs = 900) => {
+        return new Promise((resolve) => {
+            let done = false;
+
+            const onVis = () => {
+                if (document.visibilityState === 'hidden') {
+                    done = true;
+                    cleanup();
+                    resolve(true);
+                }
+            };
+
+            const cleanup = () => {
+                document.removeEventListener('visibilitychange', onVis);
+            };
+
+            document.addEventListener('visibilitychange', onVis);
+
+            // IMPORTANTE: esto debe correr dentro del click del usuario
+            window.location.href = url;
+
+            setTimeout(() => {
+                cleanup();
+                if (!done) resolve(false);
+            }, timeoutMs);
+        });
+    };
+
     const isSamsung = () => /Samsung|SM-|GT-|SCH-|SGH-|Galaxy/i.test(navigator.userAgent);
 
-    const openAndroidAlarm = (hour24, minute, label) => {
+    const openAndroidAlarm = async (hour24, minute, label, timeLabel) => {
         if (!isAndroid()) {
-            showToast('Abrir alarma: disponible en Android.');
-            return;
+            showToast('Alarma: disponible solo en Android 📱');
+            return false;
         }
 
-        // Intent estándar: abre el Reloj en "crear alarma" con hora/minuto prellenados.
-        // Nota: por seguridad, la mayoría de relojes igual pide tocar "Guardar" / "Activar".
-        const packagePart = isSamsung() ? ';package=com.sec.android.app.clockpackage' : '';
+        const setAlarmUrl = buildIntentUrl({
+            action: 'android.intent.action.SET_ALARM',
+            extras: {
+                'android.intent.extra.alarm.HOUR': hour24,
+                'android.intent.extra.alarm.MINUTES': minute,
+                'android.intent.extra.alarm.MESSAGE': label,
+                // Puedes probar true, pero algunos relojes lo ignoran:
+                // 'android.intent.extra.alarm.SKIP_UI': true,
+            },
+        });
 
-        const intentUrl =
-            'intent://alarm#Intent' +
-            ';action=android.intent.action.SET_ALARM' +
-            packagePart +
-            `;S.android.intent.extra.alarm.MESSAGE=${encodeURIComponent(label || 'SleepTimer')}` +
-            `;i.android.intent.extra.alarm.HOUR=${Number(hour24)}` +
-            `;i.android.intent.extra.alarm.MINUTES=${Number(minute)}` +
-            ';end';
+        const showAlarmsUrl = buildIntentUrl({
+            action: 'android.intent.action.SHOW_ALARMS',
+        });
 
-        window.location.href = intentUrl;
+        showToast('Abriendo reloj…');
+
+        const opened = await attemptOpenIntent(setAlarmUrl);
+        if (opened) return true;
+
+        // Fallback: al menos abrir la app de reloj
+        const openedFallback = await attemptOpenIntent(showAlarmsUrl);
+        if (openedFallback) {
+            if (timeLabel) copyToClipboard(timeLabel);
+            showToast('Reloj abierto. Hora copiada ✅');
+            return true;
+        }
+
+        // Último fallback: copiar hora
+        if (timeLabel) copyToClipboard(timeLabel);
+        showToast('No se pudo abrir el reloj. Hora copiada ✅');
+        return false;
     };
 
     const openModal = (modal) => {
@@ -266,8 +325,10 @@ document.addEventListener('DOMContentLoaded', () => {
               </button>
 
               <button class="icon-button alarm-button"
-                      data-hour24="${result.hour24}" data-minute="${result.minute}"
+                      data-hour24="${result.hour24}" 
+                      data-minute="${result.minute}"
                       data-label="SleepTimer · ${result.cycle} ciclo${result.cycle > 1 ? 's' : ''}"
+                      data-time="${result.timeLabel}"
                       aria-label="Crear alarma en el reloj">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -353,8 +414,8 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal(infoModal);
     };
 
-    const handleAlarmClick = (hour24, minute, label) => {
-        openAndroidAlarm(hour24, minute, label);
+    const handleAlarmClick = (hour24, minute, label, timeLabel) => {
+        openAndroidAlarm(hour24, minute, label, timeLabel);
     };
 
     const copyToClipboard = async (text) => {
@@ -443,7 +504,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const hour24 = parseInt(alarmBtn.dataset.hour24, 10);
                 const minute = parseInt(alarmBtn.dataset.minute, 10);
                 const label = alarmBtn.dataset.label || 'SleepTimer';
-                handleAlarmClick(hour24, minute, label);
+                const timeLabel = alarmBtn.dataset.time || '';
+                handleAlarmClick(hour24, minute, label, timeLabel);
                 return;
             }
 
