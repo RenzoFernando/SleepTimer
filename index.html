@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SleepTimer · Hora de Despertar</title>
+    <title>SleepTimer</title>
 
-    <meta name="description" content="Calcula las horas óptimas para despertar basándote en ciclos de sueño." />
-    <meta name="author" content="Renzo Fernando" />
-    <meta name="theme-color" content="#010409" />
+    <meta name="description" content="Calcula horas de sueño y despertar a partir de ciclos aproximados de 90 minutos." />
+    <meta name="author" content="Renzo Fernando Mosquera Daza" />
+    <meta name="theme-color" content="#020408" />
     <meta name="color-scheme" content="dark" />
 
-    <!-- Favicon (ahora en /extras) -->
-    <link rel="icon" href="extras/favicon.ico" />
+    <!-- Favicon (ahora en /web) -->
+    <link rel="icon" href="assets/favicon.ico" />
 
     <!-- Tailwind (CDN) + Fuente -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
 
     <!-- Estilos y scripts -->
-    <link rel="stylesheet" href="extras/style.css" />
-    <script src="extras/common.js" defer></script>
-    <script src="extras/despertar.js" defer></script>
+    <link rel="stylesheet" href="web/style.css" />
+    <script src="web/common.js" defer></script>
+    <script src="web/app.js" defer></script>
 </head>
 
 <body>
@@ -30,66 +30,82 @@
 <div id="stars-container" aria-hidden="true"></div>
 
 <main class="app-shell" role="main">
-    <header class="app-header">
+    <header class="app-header unified-header">
         <div class="brand-row">
             <h1 class="app-title">SleepTimer</h1>
         </div>
 
-        <nav class="app-nav" aria-label="Navegación principal">
-            <a href="index.html" class="nav-link active" aria-current="page">Hora de Despertar</a>
-            <a href="extras/dormir.html" class="nav-link">Hora de Dormir</a>
+        <nav class="app-nav mode-switch" aria-label="Modo de cálculo">
+            <button id="wake-mode-btn" class="nav-link active" type="button" aria-pressed="true">Hora de Despertar</button>
+            <button id="sleep-mode-btn" class="nav-link" type="button" aria-pressed="false">Hora de Dormir</button>
         </nav>
     </header>
 
-    <section class="section">
-        <p id="subtitle" class="subtitle-text">
-            Hora base: <span id="current-time" class="time-strong"></span>
-        </p>
+    <section class="workspace" aria-live="polite">
+        <div id="wake-controls" class="mode-controls">
+            <div class="control-grid">
+                <section class="control-card">
+                    <span class="control-label">Hora base</span>
+                    <strong id="current-time" class="control-value">--:--</strong>
+                    <button id="open-time-modal-btn" class="control-action" type="button">Cambiar hora</button>
+                </section>
 
-        <div class="section-actions">
-            <button id="open-time-modal-btn" class="control-button-secondary" type="button">
-                cambiar hora base
-            </button>
-
-            <button id="wake-lock-btn" class="control-button-secondary" type="button" aria-pressed="false">
-                mantener pantalla encendida
-            </button>
+                <section class="control-card">
+                    <label class="control-label" for="wake-delay-minutes-input">Tiempo para conciliar el sueño</label>
+                    <div class="compact-number">
+                        <input type="number" id="wake-delay-minutes-input" value="5" min="0" max="60" inputmode="numeric" aria-label="Minutos que tardas en dormir" />
+                        <span>min</span>
+                    </div>
+                </section>
+            </div>
         </div>
-    </section>
 
-    <section class="section">
-        <h2 class="section-title">Tiempo estimado para conciliar el sueño</h2>
+        <div id="sleep-controls" class="mode-controls hidden">
+            <div class="control-grid sleep-control-grid">
+                <section class="control-card control-card-wide">
+                    <span class="control-label">Quiero despertar</span>
+                    <div class="wake-target-grid">
+                        <input type="date" id="wake-up-date" class="date-input" aria-label="Fecha de despertar" />
+                        <div class="time-selectors-inline" aria-label="Hora de despertar">
+                            <select id="wake-hour-select" aria-label="Hora"></select>
+                            <span class="time-sep">:</span>
+                            <select id="wake-minute-select" aria-label="Minutos"></select>
+                            <select id="wake-ampm-select" aria-label="AM o PM">
+                                <option value="AM">AM</option>
+                                <option value="PM">PM</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
 
-        <div class="delay-input-wrapper">
-            <input
-                    type="number"
-                    id="delay-minutes-input"
-                    value="5"
-                    min="0"
-                    max="60"
-                    class="delay-input"
-                    inputmode="numeric"
-                    aria-label="Minutos que tardas en dormir"
-            />
-            <span class="muted">min</span>
+                <section class="control-card">
+                    <label class="control-label" for="sleep-delay-minutes-input">Tiempo para conciliar el sueño</label>
+                    <div class="compact-number">
+                        <input type="number" id="sleep-delay-minutes-input" value="5" min="0" max="60" inputmode="numeric" aria-label="Minutos que tardas en dormir" />
+                        <span>min</span>
+                    </div>
+                </section>
+            </div>
         </div>
+
+        <section class="results-section">
+            <div class="results-heading">
+                <div>
+                    <span class="results-kicker" id="results-kicker">Si te acuestas ahora</span>
+                    <h2 id="results-title">Horas para despertar</h2>
+                </div>
+                <button id="how-it-works-btn" class="help-button" type="button">Cómo funciona</button>
+            </div>
+
+            <div id="results-container" class="results-list" aria-live="polite"></div>
+        </section>
     </section>
-
-    <section class="glass-panel section" aria-label="Información general">
-        <p class="glass-title">Cómo leer los resultados</p>
-        <p class="glass-text" id="general-info">
-            Cada tarjeta representa un ciclo completo (≈ 90 min). Recomendamos despertar entre ciclos para evitar la inercia del sueño.
-        </p>
-    </section>
-
-    <h2 class="section-title section">Tus mejores horas para despertar</h2>
-    <div id="results-container" class="results-list" aria-live="polite"></div>
-
-    <footer class="app-footer">
-        <p>Diseñado para un despertar perfecto.</p>
-        <p>© <span id="year"></span> Renzo Fernando Mosquera Daza · SleepTimer</p>
-    </footer>
 </main>
+
+<footer class="project-footer">
+    <p><a href="https://github.com/RenzoFernando/SleepTimer" target="_blank" rel="noopener noreferrer"><strong>SleepTimer</strong></a> — Cálculo de ciclos de sueño</p>
+    <p>© 2026 — Renzo Fernando Mosquera Daza</p>
+</footer>
 
 <!-- Toast -->
 <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -98,22 +114,22 @@
 <div id="time-picker-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="time-modal-title">
     <div class="modal-content">
         <h3 id="time-modal-title" class="modal-title">Elige tu hora base</h3>
-        <p class="modal-subtitle">Si estás planeando dormir a una hora distinta a la actual.</p>
+        <p class="modal-subtitle">Úsala cuando quieras calcular desde una hora distinta a la actual.</p>
 
         <div class="time-selectors">
             <div class="time-selector">
-                <label for="hour-select">Hora</label>
-                <select id="hour-select" aria-label="Hora"></select>
+                <label for="base-hour-select">Hora</label>
+                <select id="base-hour-select" aria-label="Hora"></select>
             </div>
 
             <div class="time-selector">
-                <label for="minute-select">Minutos</label>
-                <select id="minute-select" aria-label="Minutos"></select>
+                <label for="base-minute-select">Minutos</label>
+                <select id="base-minute-select" aria-label="Minutos"></select>
             </div>
 
             <div class="time-selector">
-                <label for="ampm-select">AM/PM</label>
-                <select id="ampm-select" aria-label="AM o PM">
+                <label for="base-ampm-select">AM/PM</label>
+                <select id="base-ampm-select" aria-label="AM o PM">
                     <option value="AM">AM</option>
                     <option value="PM">PM</option>
                 </select>
@@ -130,7 +146,7 @@
 <!-- Modal: información del ciclo -->
 <div id="info-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="info-modal-title">
     <div class="modal-content info-modal-content">
-        <h3 id="info-modal-title" class="modal-title">Información del ciclo</h3>
+        <h3 id="info-modal-title" class="modal-title">Información</h3>
         <p id="info-modal-text" class="info-modal-text"></p>
 
         <div class="modal-actions">

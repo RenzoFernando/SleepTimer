@@ -1,53 +1,48 @@
-# **SleepTimer**
+<div align="center">
 
-<p align="center">
-  <a href="https://renzofernando.github.io/SleepTimer/" target="_blank">
-    <img src="https://img.shields.io/badge/Ver_Aplicación-Online-30b6c4?style=for-the-badge&logo=clock&logoColor=white" alt="Ver Aplicación Online">
+# SleepTimer
+
+<br>
+
+<img src="assets/favicon.ico" alt="Icono de SleepTimer" width="120" align="center">
+
+<p>
+  <a href="https://renzofernando.github.io/SleepTimer/">
+    <img src="https://img.shields.io/badge/VER%20APLICACI%C3%93N%20WEB-30b6c4?style=for-the-badge" alt="Ver aplicación web">
   </a>
 </p>
 
-Una calculadora de ciclos de sueño de doble propósito, diseñada para ayudarte a despertar en el momento justo y planificar tu noche a la perfección, evitando la inercia del sueño y la sensación de cansancio.
+<strong>Cálculo de ciclos de sueño.</strong>
 
-## **Características Principales**
+</div>
 
-* **Doble Funcionalidad:**
-    * **Calculadora de Despertar:** Te dice a qué hora debes despertar si te duermes ahora.
-    * **Calculadora de Dormir:** Te dice a qué hora debes ir a dormir para despertar a la hora que necesitas.
-* **Cálculo Preciso:** Evita la inercia del sueño al programar tus alarmas basándose en ciclos de 90 minutos.
-* **Tiempo para Dormir Ajustable:** Configura el tiempo que estimas que tardarás en conciliar el sueño (de 0 a 60 minutos) para obtener cálculos perfectos en ambas calculadoras.
-* **Planificación a Futuro:**
-    * En la calculadora de despertar, puedes elegir una hora de inicio diferente a la actual.
-    * En la calculadora de dormir, puedes seleccionar cualquier fecha y hora futuras para tu alarma.
-* **Preferencias Guardadas:** La aplicación recuerda tus configuraciones (minutos para dormir y hora de despertar) para una experiencia más rápida.
-* **Información Detallada de Ciclos:** La calculadora de despertar incluye un botón de información que explica los beneficios de cada ciclo de sueño.
-* **Diseño Inmersivo y Animado:** Una interfaz oscura y minimalista con animaciones fluidas y un borde de aurora en las tarjetas de resultados, diseñada para ser usada de noche sin causar fatiga visual.
-* **Totalmente Responsivo:** Funciona perfectamente en computadoras de escritorio y dispositivos móviles.
+<br>
 
-## **Tecnologías Utilizadas**
+<p>
+  SleepTimer es una aplicación web para estimar horas de sueño y despertar a partir de ciclos aproximados de 90 minutos. Permite calcular a qué horas podrías despertar si te acuestas desde una hora determinada o, en sentido inverso, a qué horas podrías dormir para levantarte en una fecha y hora específicas, incorporando el tiempo estimado que tardas en conciliar el sueño.
+</p>
 
-* **HTML5:** Para la estructura semántica del contenido.
-* **CSS3:** Para el diseño, las animaciones y el tema oscuro.
-    * **Tailwind CSS:** Utilizado como base para un desarrollo rápido y responsivo.
-* **JavaScript (Puro):** Para toda la lógica de la aplicación, cálculos de tiempo, animaciones y manipulación del DOM. Sin frameworks ni librerías externas.
+## Características
 
-## **Estructura del Proyecto**
+- Alternar entre cálculo de hora de despertar y hora de dormir sin cambiar de página.
+- Utilizar la hora actual o definir una hora base personalizada.
+- Elegir una fecha y hora objetivo para despertar.
+- Ajustar el tiempo estimado para conciliar el sueño.
+- Consultar nueve opciones de ciclos con una referencia visual progresiva de rojo a verde.
+- Ver información detallada de cada ciclo y copiar una hora directamente.
+- Guardar preferencias de uso en el navegador.
 
-El proyecto está organizado de manera limpia para soportar su doble funcionalidad.
+## Tecnologías
 
-```
-SleepTimer/
-├── extras
-│   ├── common.js
-│   ├── despertar.js
-│   ├── dormir.html
-│   ├── dormir.js
-│   ├── favicon.ico
-│   └── style.css
-└── index.html
-```
+- HTML5
+- CSS3
+- JavaScript
+- Tailwind CSS
 
-## **Autor**
+## Autor y licencia
 
-* **Renzo Fernando Mosquera Daza**
+[Renzo Fernando Mosquera Daza](https://github.com/RenzoFernando)
 
-*Este proyecto fue creado con el objetivo de mejorar la calidad del descanso a través de una herramienta funcional, precisa y agradable de usar.*
+© 2026 — Renzo Fernando Mosquera Daza
+
+Licencia MIT.
