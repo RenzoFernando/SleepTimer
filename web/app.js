@@ -463,9 +463,9 @@
                 `<span class="badge">${item.cycle.cycles} ciclo(s)</span>`
             ];
 
-            if (item.cycle.recommended) {
-                badges.push('<span class="badge recommended">Recomendado</span>');
-            }
+            const recommendedBadge = item.cycle.recommended
+                ? '<span class="badge recommended">Recomendado</span>'
+                : '';
 
             card.innerHTML = `
                 <div class="card-content">
@@ -475,9 +475,12 @@
                             <div class="badges">${badges.join('')}</div>
                         </div>
                         <div class="meta-row">
-                            <span>${escapeHtml(item.cycle.title)}</span>
-                            <span>·</span>
-                            <span>${escapeHtml(item.meta)}</span>
+                            ${recommendedBadge}
+                            <span class="meta-copy">
+                                <span>${escapeHtml(item.cycle.title)}</span>
+                                <span>·</span>
+                                <span>${escapeHtml(item.meta)}</span>
+                            </span>
                         </div>
                     </div>
 
@@ -501,4 +504,5 @@
         </svg>
     `;
 })();
+
 

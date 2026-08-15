@@ -448,11 +448,20 @@ body::before{
 
 .meta-row{
     display: flex;
-    gap: 10px;
+    align-items: center;
+    gap: 8px;
     flex-wrap: wrap;
     color: rgba(255,255,255,0.72);
     font-size: 13px;
     line-height: 1.2;
+}
+
+.meta-copy{
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    flex-wrap: wrap;
 }
 
 .card-actions{
@@ -1033,6 +1042,34 @@ body::before{
         border-radius: 15px;
     }
 
+    #wake-controls .control-card:first-child{
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: auto auto;
+        column-gap: 12px;
+        row-gap: 6px;
+        min-height: 0;
+        padding: 14px 15px;
+    }
+
+    #wake-controls .control-card:first-child .control-label{
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    #wake-controls .control-card:first-child .control-value{
+        grid-column: 1;
+        grid-row: 2;
+        align-self: center;
+    }
+
+    #wake-controls .control-card:first-child .control-action{
+        grid-column: 2;
+        grid-row: 2;
+        align-self: center;
+        padding: 8px 11px;
+    }
+
     .control-value{
         font-size: 25px;
     }
@@ -1048,31 +1085,42 @@ body::before{
     }
 
     .card-content{
+        min-height: 84px;
         flex-direction: row;
         align-items: center;
         padding: 13px;
     }
 
     .time-row{
-        gap: 8px;
+        gap: 7px;
+        flex-wrap: nowrap;
     }
 
     .result-time{
-        font-size: 21px;
+        flex: 0 0 auto;
+        font-size: 20px;
+        white-space: nowrap;
     }
 
     .badges{
-        gap: 6px;
+        gap: 5px;
+        flex-wrap: nowrap;
     }
 
     .badge{
-        padding: 4px 8px;
-        font-size: 11px;
+        padding: 3px 7px;
+        font-size: 10.5px;
     }
 
     .meta-row{
         gap: 7px;
         font-size: 12px;
+    }
+
+    .meta-copy{
+        gap: 6px;
+        flex-wrap: nowrap;
+        white-space: nowrap;
     }
 
     .card-actions{
@@ -1089,5 +1137,6 @@ body::before{
         padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
     }
 }
+
 
 
